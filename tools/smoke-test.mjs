@@ -65,12 +65,27 @@ window.HTMLCanvasElement.prototype.getContext = function () {
 };
 window.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,';
 
+// jsdom no decodifica PNG: simulamos la imagen con un canvas de relleno
+const sizeFromDataURL = () => {
+  const meta = window.ROBOT_SHEET;
+  return { w: meta.w, h: meta.h, cols: Math.max(...meta.counts), rows: meta.counts.length };
+};
+window.Image = class FakeImage {
+  constructor() { this._src = ''; }
+  get width() { return sizeFromDataURL().cols * sizeFromDataURL().w; }
+  get height() { return sizeFromDataURL().rows * sizeFromDataURL().h; }
+  get naturalWidth() { return this.width; }
+  get naturalHeight() { return this.height; }
+  set src(v) { this._src = v; setTimeout(() => this.onload && this.onload(), 0); }
+  get src() { return this._src; }
+};
+
 // jsdom no implementa matchMedia ni AudioContext: no hacen falta, pero
 // nos aseguramos de que el código tolere su ausencia.
 
 /* --------------------------- cargar scripts ------------------------- */
 
-const scripts = ['js/hero-frames.js', 'js/hero-png.js', 'js/sprites.js', 'js/input.js', 'js/audio.js', 'js/game.js', 'js/ui.js'];
+const scripts = ['js/robot-sheet.js', 'js/sprites.js', 'js/input.js', 'js/audio.js', 'js/game.js', 'js/ui.js'];
 for (const file of scripts) {
   window.eval(readFileSync(resolve(ROOT, file), 'utf8'));
 }
@@ -88,11 +103,13 @@ const document = window.document;
 
 // 1. arranque de la interfaz
 UI.init();
+await new Promise((r) => setTimeout(r, 0));   // robotViews carga las hojas
 Game.start();
 check('la interfaz arranca y el juego empieza', Game.state === 'playing', 'estado=' + Game.state);
 
 // 2. animaciones (idle → walk → run)
-Game.setSprite(Sprites.builtinHero(), true);
+if (Game.views) Game.setView('right');
+Game.setSprite(Game.sheet, true);
 const seen = new Set();
 const animsBySpeed = {};
 Game.update(1 / 60);
@@ -177,8 +194,6 @@ while (steps < 7200) { // 2 minutos de juego simulado
 }
 Input.set('right', false);
 Input.set('run', false);
-Input.queueJump();
-Game.update(1 / 60);
 
 check('el bot avanza por el nivel', maxX > 600, `x=${maxX.toFixed(0)} de ${Game.LEVEL.width}`);
 check('se usan las 4 animaciones de movimiento',
@@ -188,6 +203,8 @@ check('se recogen monedas', Game.stats.coins > 3, `monedas=${Game.stats.coins}/$
 check('el bot completa el nivel o llega muy lejos',
   completed || maxX > 2000, completed ? `completado en ${Game.stats.time.toFixed(1)}s` : `x=${maxX.toFixed(0)}`);
 
+Game.options.autoplay = false;   // el piloto automático era solo para esta prueba
+
 // 6. sprite propio (hoja de rejilla ficticia)
 let customOk = true;
 try {
@@ -196,7 +213,7 @@ try {
     fw: 16, fh: 24, gap: 0, order: Sprites.ANIM_ORDER,
     counts: { idle: 4, walk: 6, run: 6, jump: 2, fall: 2 },
     trim: false,
-    fallback: Sprites.builtinHero().anims,
+    fallback: Game.views ? Game.views.front.anims : null,
   });
   Game.setSprite(sheet, true);
   for (let i = 0; i < 30; i++) { Game.update(1 / 60); Game.render(); }
@@ -230,7 +247,7 @@ try {
   UI.applySprite();
   uiChecks.applied = Game.sheet.name === 'sprite propio' && Game.sheet.anims.walk.length === 6;
   UI.resetSprite();
-  uiChecks.reset = Game.sheet.name.indexOf('heroe incluido') === 0;
+  uiChecks.reset = Game.sheet.name.indexOf('robot-gato') === 0;
   Sprites.loadImage = origLoad;
   UI.selectTab('options');
   document.getElementById('opt-hurtbox').checked = true;
@@ -249,6 +266,58 @@ check('el panel de sprite carga y aplica una imagen',
   uiChecks.error || JSON.stringify(uiChecks));
 check('las opciones y el cierre del panel funcionan',
   uiChecks.option && uiChecks.closed && uiChecks.zoom, uiChecks.error || '');
+
+// 7b. vistas del personaje: frente, perfil y espaldas
+const viewChecks = {};
+try {
+  const meta = window.ROBOT_SHEET;
+  viewChecks.sheets = meta && Object.keys(meta.sheets).length === 3;
+  viewChecks.dimensions = meta.w === 44 && meta.h === 56;
+  viewChecks.counts = Game.views && Object.keys(Game.views).length === 5;
+  const views = Game.views || {};
+  viewChecks.anims = ['front', 'side', 'back', 'left', 'right'].every(
+    (v) => views[v] && views[v].anims.walk.length === 6 && views[v].anims.idle.length === 4);
+
+  // la vista cambia sola: lateral al moverse, frontal al pararse
+  Game.start();
+  Game.viewMode = 'auto';
+  Game.update(1 / 60);
+  const idleView = Game.currentView;
+  Input.set('right', true);
+  for (let i = 0; i < 30; i++) Game.update(1 / 60);
+  const movView = Game.currentView;
+  Input.set('right', false);
+  Input.set('left', true);
+  for (let i = 0; i < 40; i++) Game.update(1 / 60);
+  const leftView = Game.currentView;
+  Input.set('left', false);
+  for (let i = 0; i < 30; i++) Game.update(1 / 60);
+  const backToIdle = Game.currentView;
+
+  viewChecks.idleFront = idleView === 'front';
+  viewChecks.walkRight = movView === 'right';
+  viewChecks.walkLeft = leftView === 'left';
+  viewChecks.idleAgain = backToIdle === 'front';
+
+  // cambio manual de vista y dibujo en las tres vistas
+  ['front', 'side', 'back'].forEach((v) => {
+    Game.viewMode = v;
+    Game.setView(v);
+    for (let i = 0; i < 6; i++) { Game.update(1 / 60); Game.render(); }
+  });
+  viewChecks.manual = Game.sheet.view === 'back';
+  Game.viewMode = 'auto';
+  Game.update(1 / 60);
+} catch (e) {
+  viewChecks.error = String(e && e.stack ? e.stack.split('\n')[0] : e);
+  console.error(e);
+}
+check('las cinco hojas del robot están disponibles',
+  viewChecks.sheets && viewChecks.dimensions && viewChecks.anims, viewChecks.error || '');
+check('la vista cambia según el movimiento (ida y vuelta)',
+  viewChecks.idleFront && viewChecks.walkRight && viewChecks.walkLeft && viewChecks.idleAgain,
+  JSON.stringify(viewChecks));
+check('el cambio manual de vista dibuja sin errores', viewChecks.manual, viewChecks.error || '');
 
 // 8. arte auxiliar
 const slime = Sprites.slimeSheet();

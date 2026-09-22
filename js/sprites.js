@@ -44,13 +44,42 @@
     ];
   }
 
+  /**
+   * Espejo horizontal de un lienzo.
+   * Se hace píxel a píxel (getImageData/putImageData) en vez de con
+   * transformaciones: así funciona igual en cualquier contexto y el
+   * resultado es idéntico píxel a píxel (sin suavizados ni medio píxeles).
+   */
   function flipCanvas(src) {
-    var c = makeCanvas(src.width, src.height);
+    var w = src.width;
+    var h = src.height;
+    var c = makeCanvas(w, h);
     var g = ctxOf(c);
-    g.translate(src.width, 0);
-    g.scale(-1, 1);
-    g.drawImage(src, 0, 0);
-    return c;
+    try {
+      var data = ctxOf(src).getImageData(0, 0, w, h);
+      var px = data.data;
+      var out = g.createImageData(w, h);
+      var dst = out.data;
+      for (var y = 0; y < h; y++) {
+        var row = y * w * 4;
+        for (var x = 0; x < w; x++) {
+          var sIdx = row + x * 4;
+          var dIdx = row + (w - 1 - x) * 4;
+          dst[dIdx] = px[sIdx];
+          dst[dIdx + 1] = px[sIdx + 1];
+          dst[dIdx + 2] = px[sIdx + 2];
+          dst[dIdx + 3] = px[sIdx + 3];
+        }
+      }
+      g.putImageData(out, 0, 0);
+      return c;
+    } catch (e) {
+      // respaldo: transformación del contexto
+      g.translate(w, 0);
+      g.scale(-1, 1);
+      g.drawImage(src, 0, 0);
+      return c;
+    }
   }
 
   /* ------------------ hoja a partir de frames de texto ----------------- */
@@ -103,7 +132,7 @@
       fw: fw,
       fh: fh,
       anims: anims,
-      name: 'heroe incluido',
+      name: 'robot-gato',
       sourceType: 'generated',
     });
   }
@@ -293,30 +322,102 @@
   var Sprites = {
     ANIM_ORDER: ANIM_ORDER,
 
-    /** Hoja del heroe incluido (frames generados por tools/build.mjs) */
-    builtinHero: function () {
-      var data = root.HERO_FRAMES;
-      if (data && data.animations && data.meta) return buildFromFrames(data);
-      // respaldo: PNG embebido como data URL
-      var img = new Image();
-      img.src = root.HERO_SHEET_PNG;
+    /** Lienzo de reserva: 1 frame por animación, por si falla la carga */
+    makeDummy: function () {
+      var fw = 16;
+      var fh = 24;
+      var canvas = makeCanvas(fw, fh);
+      var ctx = ctxOf(canvas);
+      ctx.fillStyle = '#e0483c';
+      ctx.fillRect(2, 2, fw - 4, fh - 4);
+      var rows = ANIM_ORDER.map(function (name) {
+        return { name: name, frames: [{ x: 0, y: 0, w: fw, h: fh }] };
+      });
       var sheet = {
-        source: img,
-        fw: 16,
-        fh: 24,
-        anims: {},
-        name: 'heroe incluido (png)',
-        sourceType: 'generated',
-        scale: 1,
+        source: canvas,
+        fw: fw,
+        fh: fh,
+        anims: animsFromRows(rows, ANIM_ORDER),
+        name: 'reserva',
+        sourceType: 'builtin',
+        scale: 1.25,
       };
-      var counts = { idle: 4, walk: 6, run: 6, jump: 2, fall: 2 };
-      var rows = gridRows({ fw: 16, fh: 24, gap: 0, order: ANIM_ORDER, counts: counts });
-      sheet.anims = animsFromRows(rows, ANIM_ORDER);
       return finishSheet(sheet);
     },
 
     gridRows: gridRows,
     detectGroups: detectGroups,
+    flipCanvas: flipCanvas,
+
+    /**
+     * Hojas del robot-gato incluidas en el juego.
+     * Devuelve { front, side, back, left, right } donde cada valor es una hoja
+     * completa (idle/walk/run/jump/fall). La vista a la izquierda es el espejo
+     * exacto del perfil, igual que assets/robot-left-sheet.png.
+     */
+    robotViews: function (cb) {
+      var meta = root.ROBOT_SHEET;
+      if (!meta || !meta.sheets) {
+        cb(null);
+        return;
+      }
+      var names = Object.keys(meta.sheets);
+      var pending = names.length;
+      var images = {};
+      var failed = false;
+      names.forEach(function (name) {
+        var img = new Image();
+        img.onload = function () {
+          images[name] = img;
+          if (--pending === 0) done();
+        };
+        img.onerror = function () {
+          failed = true;
+          if (--pending === 0) done();
+        };
+        img.src = meta.sheets[name];
+      });
+
+      function build(img, name) {
+        var counts = {};
+        meta.order.forEach(function (a, i) { counts[a] = meta.counts[i]; });
+        var canvas = imageToCanvas(img);
+        var rows = gridRows({ fw: meta.w, fh: meta.h, gap: 0, order: meta.order, counts: counts });
+        var sheet = sheetFromCanvas(canvas, rows, {
+          order: meta.order,
+          name: 'robot-gato · ' + name,
+          sourceType: 'builtin',
+        });
+        sheet.view = name;
+        return sheet;
+      }
+
+      function done() {
+        if (failed) { cb(null); return; }
+        var views = {};
+        Object.keys(images).forEach(function (name) {
+          views[name] = build(images[name], name);
+        });
+        if (views.side) {
+          // vista a la izquierda: espejo del perfil (los frames ya existen
+          // como hoja en assets/robot-left-sheet.png)
+          var leftSource = flipCanvas(views.side.source);
+          var left = {};
+          Object.keys(views.side).forEach(function (k) { left[k] = views.side[k]; });
+          left = Object.assign({}, views.side, {
+            source: leftSource,
+            flipped: flipCanvas(leftSource),
+            name: 'robot-gato · izquierda',
+            view: 'left',
+            preFlipped: true,
+          });
+          views.left = left;
+          views.right = views.side;
+          views.right.preFlipped = false;
+        }
+        cb(views);
+      }
+    },
 
     /** Rejilla definida a mano en el panel */
     sheetFromGrid: function (img, cfg) {

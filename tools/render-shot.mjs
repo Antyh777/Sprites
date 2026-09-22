@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { decodePNG } from './png.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.argv[2] || '/tmp/shots';
@@ -85,6 +86,25 @@ class Surface {
     this.data[i + 2] = rgb[2] * a + this.data[i + 2] * inv;
     this.data[i + 3] = Math.max(this.data[i + 3], Math.round(255 * a));
   }
+  scaled(n) {
+    const out = new Surface(this.width * n, this.height * n);
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const i = (y * this.width + x) * 4;
+        for (let sy = 0; sy < n; sy++) {
+          for (let sx = 0; sx < n; sx++) {
+            const j = ((y * n + sy) * out.width + (x * n + sx)) * 4;
+            out.data[j] = this.data[i];
+            out.data[j + 1] = this.data[i + 1];
+            out.data[j + 2] = this.data[i + 2];
+            out.data[j + 3] = this.data[i + 3];
+          }
+        }
+      }
+    }
+    return out;
+  }
+
   copyFrom(src, sx, sy, sw, sh, dx, dy, dw, dh, alpha) {
     for (let y = 0; y < dh; y++) {
       const syy = sy + Math.floor((y * sh) / dh);
@@ -229,7 +249,7 @@ function makeCtx(canvas) {
       let source;
       if (src instanceof Surface) source = src;
       else if (src && src._ctx) source = surfaceOf(src);
-      else if (src && src.width) source = null; // imagen cargada: no simulada
+      else if (src && src._canvas) source = surfaceOf(src._canvas); // Image simulada
       if (!source) return;
 
       let sx = 0; let sy = 0; let sw = source.width; let sh = source.height;
@@ -299,11 +319,42 @@ const { window } = dom;
 window.HTMLCanvasElement.prototype.getContext = function () { return this._ctx || makeCtx(this); };
 window.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,';
 
-for (const f of ['js/hero-frames.js', 'js/hero-png.js', 'js/sprites.js', 'js/input.js', 'js/audio.js', 'js/game.js', 'js/ui.js']) {
+for (const f of ['js/robot-sheet.js', 'js/sprites.js', 'js/input.js', 'js/audio.js', 'js/game.js', 'js/ui.js']) {
   window.eval(readFileSync(resolve(ROOT, f), 'utf8'));
 }
+// jsdom no decodifica PNG: convertimos el data URL en un canvas ya pintado
+window.Image = class FakeImage {
+  constructor() { this.onload = null; this.onerror = null; this._src = ''; }
+  set src(v) {
+    this._src = v;
+    try {
+      const b64 = v.split(',')[1];
+      const png = decodePNG(Buffer.from(b64, 'base64'));
+      const c = window.document.createElement('canvas');
+      c.width = png.width;
+      c.height = png.height;
+      const ctx = c.getContext('2d');
+      const img = ctx.createImageData(png.width, png.height);
+      img.data.set(png.data);
+      ctx.putImageData(img, 0, 0);
+      this._canvas = c;
+      this.width = png.width;
+      this.height = png.height;
+      this.naturalWidth = png.width;
+      this.naturalHeight = png.height;
+      setTimeout(() => this.onload && this.onload(), 0);
+    } catch (e) {
+      setTimeout(() => this.onerror && this.onerror(e), 0);
+    }
+  }
+  get src() { return this._src; }
+};
+
 const { Game, Sprites, Input, UI } = window;
 UI.init();
+await new Promise((r) => setTimeout(r, 0));
+const views = Game.views;
+if (!views) throw new Error('no se cargaron las hojas del robot');
 
 /* ---- utilidades de montaje ---- */
 
@@ -351,22 +402,68 @@ function vstack(surfaces, gap = 6, bg = [26, 30, 52, 255]) {
 
 /* ---- 1. poses de animación dentro del juego ---- */
 
-Game.setSprite(Sprites.builtinHero(), true);
-Game.start();
-Game.update(1 / 60);
-const poses = [];
-const poseList = [['idle', 1], ['walk', 1], ['walk', 4], ['run', 2], ['run', 4], ['jump', 0], ['fall', 0]];
-for (const [name, frame] of poseList) {
+function poseShot(view, anim, frame) {
+  Game.viewMode = view;
+  Game.setView(view);
   Game.player.x = 560;
   Game.player.y = Game.GROUND_TOP - Game.player.h;
-  Game.player.vx = name === 'idle' ? 0 : 100;
-  Game.player.anim = name;
+  Game.player.vx = anim === 'idle' ? 0 : 100;
+  Game.player.anim = anim;
   Game.player.frame = frame;
   Game.cam.x = Math.round(Game.player.x - VIEW.w * 0.42);
   Game.render();
-  poses.push(crop(shot(), 120, 90, 140, 100));
+  return crop(shot(), 150, 110, 110, 90);
 }
-writeFileSync(resolve(OUT, 'poses.png'), toPNG(hstack(poses)));
+
+const poses = [];
+[['front', 'idle', 0], ['front', 'walk', 0], ['front', 'walk', 3], ['front', 'run', 2], ['front', 'jump', 0]]
+  .forEach(([v, a, f]) => poses.push(poseShot(v, a, f)));
+writeFileSync(resolve(OUT, 'poses-front.png'), toPNG(hstack(poses)));
+
+const sidePoses = [];
+[['side', 'walk', 0], ['side', 'walk', 2], ['side', 'walk', 4], ['side', 'run', 1], ['side', 'run', 4], ['side', 'jump', 0], ['side', 'fall', 0]]
+  .forEach(([v, a, f]) => sidePoses.push(poseShot(v, a, f)));
+writeFileSync(resolve(OUT, 'poses-side.png'), toPNG(hstack(sidePoses)));
+
+const backPoses = [];
+[['back', 'idle', 0], ['back', 'walk', 1], ['back', 'run', 3], ['back', 'fall', 1]]
+  .forEach(([v, a, f]) => backPoses.push(poseShot(v, a, f)));
+writeFileSync(resolve(OUT, 'poses-back.png'), toPNG(hstack(backPoses)));
+
+/* ---- 1b. primer plano del jugador dentro del juego ---- */
+
+function playerCloseUp(view, anim, frame, facing) {
+  Game.viewMode = view;
+  Game.setView(view);
+  const p = Game.player;
+  p.x = 560;
+  p.y = Game.GROUND_TOP - p.h;
+  p.vx = anim === 'idle' ? 0 : 100;
+  p.facing = facing;
+  p.anim = anim;
+  p.frame = frame;
+  Game.cam.x = Math.round(p.x - VIEW.w * 0.42);
+  Game.render();
+  const surf = shot();
+  const cx = Math.round(p.x + p.w / 2 - Game.cam.x);
+  const feet = Math.round(p.y + p.h);
+  return crop(surf, cx - 26, feet - 46, 52, 50).scaled(3);
+}
+
+const closeUps = [];
+[['side', 'walk', 0], ['side', 'walk', 1], ['side', 'walk', 2], ['side', 'walk', 3], ['side', 'run', 1], ['side', 'run', 4]]
+  .forEach(([v, a, f]) => closeUps.push(playerCloseUp(v, a, f, 1)));
+writeFileSync(resolve(OUT, 'primer-plano-derecha.png'), toPNG(hstack(closeUps, 4)));
+
+const closeUpsL = [];
+[['side', 'walk', 0], ['side', 'walk', 2], ['side', 'run', 2], ['side', 'jump', 0], ['side', 'fall', 0]]
+  .forEach(([v, a, f]) => closeUpsL.push(playerCloseUp(v, a, f, -1)));
+writeFileSync(resolve(OUT, 'primer-plano-izquierda.png'), toPNG(hstack(closeUpsL, 4)));
+
+const closeUpsF = [];
+[['front', 'idle', 0], ['front', 'idle', 3], ['front', 'walk', 1], ['front', 'run', 2], ['front', 'jump', 1]]
+  .forEach(([v, a, f]) => closeUpsF.push(playerCloseUp(v, a, f, 1)));
+writeFileSync(resolve(OUT, 'primer-plano-frente.png'), toPNG(hstack(closeUpsF, 4)));
 
 /* ---- 2. escenas completas jugando con el piloto automático ---- */
 
@@ -384,11 +481,27 @@ while (step <= Math.max(...marks) && Game.state !== 'complete') {
   }
 }
 Game.options.autoplay = false;
+
+// media vuelta: escenas corriendo hacia la izquierda
+Game.start();
+Game.viewMode = 'auto';
+Input.set('left', true);
+Input.set('run', true);
+for (let i = 0; i < 200; i++) {
+  Game.update(1 / 60);
+  if (i === 60 || i === 130) {
+    Game.render();
+    scenes.push(crop(shot(), 0, 0, VIEW.w, VIEW.h));
+  }
+}
+Input.set('left', false);
+Input.set('run', false);
 writeFileSync(resolve(OUT, 'escenas.png'), toPNG(vstack(scenes)));
 
 /* ---- 3. fondo con y sin parallax + vista de colisiones ---- */
 
 Game.start();
+Game.viewMode = 'auto';
 Game.player.x = 1400;
 Game.player.y = Game.GROUND_TOP - Game.player.h;
 Game.cam.x = 1200;
@@ -402,7 +515,7 @@ const hit = crop(shot(), 0, 0, VIEW.w, VIEW.h);
 Game.options.hitboxes = false;
 writeFileSync(resolve(OUT, 'extras.png'), toPNG(vstack([parOn, parOff, hit])));
 
-console.log('PNG escritos en ' + OUT + ' (poses.png, escenas.png, extras.png)');
+console.log('PNG escritos en ' + OUT + ' (poses-front/side/back, escenas, extras)');
 
 // jsdom mantiene vivo el bucle de requestAnimationFrame: cerramos a mano
 process.exit(0);

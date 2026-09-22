@@ -32,7 +32,7 @@
   function plank(x, y, w) { return { x: x, y: y, w: w, h: 8, type: 'plank' }; }
 
   /**
-   * Metros del heroe (hitbox 12x28, salto de 60 px):
+   * Medidas del personaje (hitbox 12x28, salto de 60 px):
    *   · suelo en y=176
    *   · plataforma baja:  top y=124 (52 px sobre el suelo) → alcanzable de un salto
    *   · plataforma alta:  top y= 92 (32 px mas arriba) → se sube desde la baja
@@ -123,6 +123,7 @@
     GROUND_TOP: GROUND_TOP,
 
     options: {
+      frontWalk: false,   // andar/correr con la vista de frente (se espeja según el lado)
       parallax: true,
       particles: true,
       shadows: true,
@@ -148,7 +149,10 @@
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
-      this.sheetDefaults = root.Sprites.builtinHero();
+      this.views = (opts && opts.views) || null;
+      this.viewMode = 'auto';            // auto | front | side | back
+      this.sheetDefaults = this.views ? this.views.front : root.Sprites.makeDummy();
+      this.setView('front');
       this.setSprite(this.sheetDefaults, true);
       this.bakeArt();
       this.reset();
@@ -163,7 +167,33 @@
     /** Fuente de aleatoriedad estable para el decorado */
     rng: mulberry32(1337),
 
-    /* -------------------- cambio de sprite (heroe) --------------------- */
+    /**
+     * Cambia la vista del personaje (frente, perfil, espaldas).
+     * En movimiento, la vista lateral se elige por la dirección: 'left' o 'right'.
+     */
+    setView: function (name) {
+      if (!this.views) return;
+      var sheet = this.views[name];
+      if (!sheet) return;
+      this.currentView = name;
+      this.sheet = sheet;
+      this.sheetDefaults = sheet;
+    },
+
+    /** Vista que corresponde al estado actual del jugador */
+    viewFor: function (p) {
+      if (this.options.frontWalk) return 'front';
+      if (this.viewMode !== 'auto') {
+        if (this.viewMode === 'side') return p.facing < 0 ? 'left' : 'right';
+        return this.viewMode;
+      }
+      var moving = Math.abs(p.vx) > 12;
+      if (!p.onGround || moving) return p.facing < 0 ? 'left' : 'right';
+      // quieto: de frente; tras unos segundos se gira de espaldas
+      return this.idleTime > 3.5 ? 'back' : 'front';
+    },
+
+    /* ------------------- cambio de sprite del personaje ----------------- */
 
     setSprite: function (sheet, keep) {
       var prevFeet = this.player ? this.player.y + this.player.h : 0;
@@ -214,6 +244,8 @@
       this.stats.time = 0;
       this.stats.stomps = 0;
       this.cam.x = 0;
+      this.idleTime = 0;
+      if (this.views) this.setView('front');
       this.paused = false;
       this.acc = 0;
       this.animClock = 0;
@@ -314,6 +346,13 @@
       if (p.onGround && Math.abs(p.vx) < 40) {
         p.spawn.x = p.x;
         p.spawn.y = p.y;
+      }
+
+      // vista del personaje: lateral al moverse, frontal al quedarse quieto
+      this.idleTime = Math.abs(p.vx) < 12 && p.onGround ? (this.idleTime || 0) + dt : 0;
+      var wanted = this.viewFor(p);
+      if (wanted && wanted !== this.currentView && this.views && this.views[wanted]) {
+        this.setView(wanted);
       }
 
       this.updateAnimation(dt);
@@ -940,8 +979,9 @@
       // parpadeo al ser invulnerable
       if (p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0) ctx.globalAlpha = 0.42;
 
-      var src = p.facing < 0 ? sheet.flipped : sheet.source;
-      var sx = p.facing < 0 ? src.width - rect.x - rect.w : rect.x;
+      var doFlip = p.facing < 0 && !sheet.preFlipped;
+      var src = doFlip ? sheet.flipped : sheet.source;
+      var sx = doFlip ? src.width - rect.x - rect.w : rect.x;
       ctx.drawImage(src, sx, rect.y, rect.w, rect.h,
         cx - Math.round(w / 2), feet - h, w, h);
       ctx.globalAlpha = 1;

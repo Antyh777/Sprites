@@ -26,7 +26,16 @@
     this.frameAnim = true;
     this.currentTab = 'sprite';
 
+    root.Sprites.robotViews(function (views) {
+      self.boot(views);
+    });
+  };
+
+  /** Arranque con las hojas ya cargadas */
+  UI.prototype.boot = function (views) {
+    var self = this;
     root.Game.init($('game'), {
+      views: views,
       onHud: function (stats, state) { self.renderHud(stats); self.showState(state); },
       onState: function (state) { self.showState(state); },
     });
@@ -44,6 +53,7 @@
     this.bindKeys();
     this.bindOptions();
     this.syncFieldsFromSheet(root.Game.sheet, true);
+    this.syncViewButtons();
     this.showState('title');
     this.renderHud(root.Game.stats);
     this.drawInspector();
@@ -168,6 +178,17 @@
     $('btn-autodetect').addEventListener('click', function () { self.autodetect(); });
     $('btn-apply').addEventListener('click', function () { self.applySprite(); });
     $('btn-reset-sprite').addEventListener('click', function () { self.resetSprite(); });
+
+    // selector de vista del personaje
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var v = btn.dataset.view;
+        root.Game.viewMode = v;
+        if (v !== 'auto' && root.Game.views) root.Game.setView(v === 'side' ? 'right' : v);
+        self.syncViewButtons();
+        self.drawInspector();
+      });
+    });
 
     // pestaña frames
     $('btn-zoom-in').addEventListener('click', function () { self.setZoom(self.zoom + 1); });
@@ -337,13 +358,12 @@
     this.pending = null;
     this.detected = null;
     $('btn-apply').disabled = true;
-    var sheet = root.Game.sheetDefaults;
+    var sheet = (root.Game.views && root.Game.views.front) || root.Game.sheetDefaults;
+    root.Game.viewMode = 'auto';
+    if (root.Game.views) root.Game.setView('front');
     root.Game.setSprite(sheet, true);
+    this.syncViewButtons();
     this.syncFieldsFromSheet(sheet, true);
-    $('sheet-info').textContent = 'Héroe incluido: ' + sheet.fw + '×' + sheet.fh + ' px · ' +
-      root.Sprites.ANIM_ORDER.map(function (n) {
-        return n + ':' + sheet.anims[n].length;
-      }).join(' ');
     this.drawPreview();
     this.drawInspector();
   };
@@ -359,11 +379,19 @@
         var input = $('cfg-' + n);
         if (input) input.value = (sheet.anims[n] && sheet.anims[n].length) || counts[n];
       });
-      $('sheet-info').textContent = 'Héroe incluido: ' + sheet.fw + '×' + sheet.fh + ' px · ' +
+      $('sheet-info').textContent = 'Robot-gato incluido: ' + sheet.fw + '×' + sheet.fh +
+        ' px por frame · 3 vistas (frente, perfil, espaldas) × ' +
         root.Sprites.ANIM_ORDER.map(function (n) {
           return n + ':' + sheet.anims[n].length;
         }).join(' ');
     }
+  };
+
+  UI.prototype.syncViewButtons = function () {
+    var mode = root.Game.viewMode || 'auto';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (btn) {
+      btn.classList.toggle('is-active', btn.dataset.view === mode);
+    });
   };
 
   /* ---------------------------- previsualizar -------------------------- */
@@ -537,6 +565,7 @@
       'opt-hurtbox': 'hitboxes',
       'opt-shadows': 'shadows',
       'opt-parallax': 'parallax',
+      'opt-frontwalk': 'frontWalk',
       'opt-autoplay': 'autoplay',
     };
     Object.keys(map).forEach(function (id) {

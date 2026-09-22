@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sprites · Aventura lateral (side-scroller)</title>
+<title>Robot-gato · Aventura lateral (side-scroller)</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -37,8 +37,8 @@
     <!-- Mensajes superpuestos (inicio / pausa / fin) -->
     <div class="overlay" id="overlay">
       <div class="card">
-        <h1 id="ov-title">SPRITES</h1>
-        <p id="ov-text">Aventura lateral con frames de animación</p>
+        <h1 id="ov-title">ROBOT-GATO</h1>
+        <p id="ov-text">Frames de frente, perfil (izquierda y derecha) y espaldas</p>
         <ul class="keys">
           <li><kbd>←</kbd><kbd>→</kbd> o <kbd>A</kbd><kbd>D</kbd> moverse</li>
           <li><kbd>Espacio</kbd> o <kbd>W</kbd> saltar · <kbd>Shift</kbd> correr</li>
@@ -74,76 +74,91 @@
       <button class="btn small ghost" id="panel-close" title="Cerrar">✕</button>
     </header>
 
-    <!-- --- pestaña: cargar sprite propio --- -->
+    <!-- --- pestaña: personaje y carga de sprites propios --- -->
     <section class="tab-body" data-tab="sprite">
       <p class="note">
-        El personaje incluido se dibuja a mano en <code>tools/hero-parts.mjs</code>.
-        Aquí puedes cargar <b>tu propia hoja de sprites</b>: se usará en el juego al instante.
-        Una fila por animación, en este orden: <b>idle, caminar, correr, salto, caída</b>.
+        El personaje es tu robot-gato: <b>frente</b>, <b>perfil</b> (mirando a la
+        izquierda y a la derecha) y <b>espaldas</b>, con idle, caminar, correr,
+        salto y caída. Se cambia de vista solo según hacia dónde mira y si se mueve.
       </p>
 
-      <label class="drop" id="drop">
-        <input type="file" id="file-sprite" accept="image/png,image/webp,image/gif,image/*" hidden>
-        <span>📂 Elegir PNG…</span>
-        <small>o arrástralo al recuadro del juego</small>
-      </label>
-
-      <p class="note tiny">
-        ¿Prefieres dibujarla tú? Descarga la plantilla:
-        <a class="link" href="assets/plantilla-hoja-sprites.png" download>plantilla-hoja-sprites.png</a>
-        · referencia del héroe:
-        <a class="link" href="assets/hoja-heroe-etiquetada.png" download>hoja-heroe-etiquetada.png</a>
-      </p>
-      <p class="note tiny">
-        Recuerda: fondo <b>transparente</b> y el personaje <b>apoyado abajo</b> de cada celda
-        (la línea base marca dónde van los pies).
-      </p>
-
-      <div class="grid2">
-        <label>Ancho de frame <input type="number" id="cfg-fw" value="16" min="4" max="256"></label>
-        <label>Alto de frame <input type="number" id="cfg-fh" value="24" min="4" max="256"></label>
+      <div class="view-row">
+        <span class="view-label">Vista</span>
+        <button class="btn small" data-view="auto" title="Automática según el movimiento">Auto</button>
+        <button class="btn small" data-view="front">Frente</button>
+        <button class="btn small" data-view="side">Perfil</button>
+        <button class="btn small" data-view="back">Espaldas</button>
       </div>
-      <div class="grid2">
-        <label>Separación <input type="number" id="cfg-gap" value="0" min="0" max="8" step="1" title="Píxeles transparentes entre frames"></label>
-        <label>Orden de filas
-          <select id="cfg-order">
-            <option value="idle,walk,run,jump,fall">idle·walk·run·jump·fall</option>
-            <option value="walk,run,idle,jump,fall">walk·run·idle·jump·fall</option>
-            <option value="idle,run,walk,jump,fall">idle·run·walk·jump·fall</option>
-          </select>
+
+      <p class="note tiny">
+        Hojas del personaje:
+        <a class="link" href="assets/robot-front-sheet.png" download>frente</a> ·
+        <a class="link" href="assets/robot-side-sheet.png" download>perfil</a> ·
+        <a class="link" href="assets/robot-left-sheet.png" download>izquierda</a> ·
+        <a class="link" href="assets/robot-right-sheet.png" download>derecha</a> ·
+        <a class="link" href="assets/robot-back-sheet.png" download>espaldas</a> ·
+        <a class="link" href="assets/robot-referencia.png" download>todas</a>
+      </p>
+
+      <details class="more">
+        <summary>Cargar otro sprite</summary>
+        <p class="note tiny">
+          Una fila por animación, en el orden <b>idle, caminar, correr, salto, caída</b>,
+          fondo transparente y el personaje apoyado abajo de cada celda.
+          Plantilla: <a class="link" href="assets/plantilla-hoja-sprites.png" download>plantilla-hoja-sprites.png</a>
+        </p>
+        <label class="drop" id="drop">
+          <input type="file" id="file-sprite" accept="image/png,image/webp,image/gif,image/*" hidden>
+          <span>📂 Elegir PNG…</span>
+          <small>o arrástralo al recuadro del juego</small>
         </label>
-      </div>
-      <div class="grid2">
-        <label>Frames idle <input type="number" id="cfg-idle" value="4" min="1" max="32"></label>
-        <label>Frames caminar <input type="number" id="cfg-walk" value="6" min="1" max="32"></label>
-      </div>
-      <div class="grid2">
-        <label>Frames correr <input type="number" id="cfg-run" value="6" min="1" max="32"></label>
-        <label>Frames salto <input type="number" id="cfg-jump" value="2" min="1" max="32"></label>
-      </div>
-      <div class="grid2">
-        <label>Frames caída <input type="number" id="cfg-fall" value="2" min="1" max="32"></label>
-        <label class="check"><input type="checkbox" id="cfg-trim"> recortar filas vacías</label>
-      </div>
 
-      <div class="row">
-        <button class="btn" id="btn-autodetect">🔍 Detectar rejilla</button>
-        <button class="btn" id="btn-apply" disabled>✓ Aplicar</button>
-      </div>
-      <div class="row">
-        <button class="btn ghost" id="btn-reset-sprite">↺ Volver al héroe incluido</button>
-      </div>
+        <div class="grid2">
+          <label>Ancho de frame <input type="number" id="cfg-fw" value="16" min="4" max="256"></label>
+          <label>Alto de frame <input type="number" id="cfg-fh" value="24" min="4" max="256"></label>
+        </div>
+        <div class="grid2">
+          <label>Separación <input type="number" id="cfg-gap" value="0" min="0" max="8" step="1" title="Píxeles transparentes entre frames"></label>
+          <label>Orden de filas
+            <select id="cfg-order">
+              <option value="idle,walk,run,jump,fall">idle·walk·run·jump·fall</option>
+              <option value="walk,run,idle,jump,fall">walk·run·idle·jump·fall</option>
+              <option value="idle,run,walk,jump,fall">idle·run·walk·jump·fall</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid2">
+          <label>Frames idle <input type="number" id="cfg-idle" value="4" min="1" max="32"></label>
+          <label>Frames caminar <input type="number" id="cfg-walk" value="6" min="1" max="32"></label>
+        </div>
+        <div class="grid2">
+          <label>Frames correr <input type="number" id="cfg-run" value="6" min="1" max="32"></label>
+          <label>Frames salto <input type="number" id="cfg-jump" value="2" min="1" max="32"></label>
+        </div>
+        <div class="grid2">
+          <label>Frames caída <input type="number" id="cfg-fall" value="2" min="1" max="32"></label>
+          <label class="check"><input type="checkbox" id="cfg-trim"> recortar filas vacías</label>
+        </div>
 
-      <div class="preview-wrap">
-        <canvas id="preview" width="288" height="120"></canvas>
-        <div class="preview-legend" id="preview-legend">Sin imagen cargada.</div>
-      </div>
-      <p class="note tiny" id="sheet-info">Héroe incluido: 16×24 · 20 frames.</p>
+        <div class="row">
+          <button class="btn" id="btn-autodetect">🔍 Detectar rejilla</button>
+          <button class="btn" id="btn-apply" disabled>✓ Aplicar</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="btn-reset-sprite">↺ Volver al robot incluido</button>
+        </div>
+
+        <div class="preview-wrap">
+          <canvas id="preview" width="288" height="120"></canvas>
+          <div class="preview-legend" id="preview-legend">Sin imagen cargada.</div>
+        </div>
+        <p class="note tiny" id="sheet-info"></p>
+      </details>
     </section>
 
     <!-- --- pestaña: inspector de frames --- -->
     <section class="tab-body" data-tab="frames" hidden>
-      <p class="note">Todos los frames del sprite activo. La animación en curso se resalta.</p>
+      <p class="note">Todos los frames de la vista activa. La animación en curso se resalta.</p>
       <div class="row">
         <button class="btn small" id="btn-zoom-out">−</button>
         <span class="zoom-label" id="zoom-label">×3</span>
@@ -162,6 +177,7 @@
       <label class="check"><input type="checkbox" id="opt-fps"> mostrar FPS</label>
       <label class="check"><input type="checkbox" id="opt-shadows"> sombras de los personajes</label>
       <label class="check"><input type="checkbox" id="opt-parallax" checked> fondo con parallax</label>
+      <label class="check"><input type="checkbox" id="opt-frontwalk"> andar de frente (se espeja a cada lado)</label>
       <label class="check"><input type="checkbox" id="opt-autoplay"> piloto automático (demo de animaciones)</label>
       <label class="range">Velocidad del juego ×<input type="range" id="opt-speed" min="0.25" max="1.5" step="0.05" value="1"><span id="opt-speed-val">1.00</span></label>
       <div class="row">
@@ -175,9 +191,8 @@
   </aside>
 </div>
 
-<!-- datos generados por tools/build.mjs -->
-<script src="js/hero-frames.js"></script>
-<script src="js/hero-png.js"></script>
+<!-- datos generados por tools/build-robot.mjs -->
+<script src="js/robot-sheet.js"></script>
 <!-- motor -->
 <script src="js/sprites.js"></script>
 <script src="js/input.js"></script>

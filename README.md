@@ -1,13 +1,18 @@
-# Sprites · Aventura lateral (side-scroller)
+# Robot-gato · Aventura lateral (side-scroller)
 
-Demo jugable de **side-scroller** con un héroe pixel art al que se le han diseñado
-**todos los frames de animación**: reposo, caminar, correr, salto y caída.
-Incluye además un **cargador de hojas de sprites** para usar tus propios dibujos
-en el juego sin tocar código.
+Juego **side-scroller** jugable cuyo único personaje es el **robot-gato** que
+dibujaste: se le han diseñado todos los frames que faltaban, a partir de tu
+imagen y manteniendo su diseño, colores y proporciones exactos.
+
+Incluye las vistas **de frente**, **de perfil** y **de espaldas**, y el
+movimiento **a la izquierda y a la derecha** en las dos vistas laterales
+(la vista izquierda es el espejo exacto de la derecha). El personaje cambia de
+vista solo: de perfil cuando se mueve (hacia el lado al que va), de frente al
+quedarse quieto y de espaldas si te quedas mucho rato parado.
 
 Abre **`index.html`** en el navegador y juega.
 
-![hoja de sprites](assets/hoja-heroe-etiquetada.png)
+![todas las vistas y animaciones](assets/robot-referencia.png)
 
 ---
 
@@ -18,78 +23,58 @@ Abre **`index.html`** en el navegador y juega.
 | Moverse | `←` `→` o `A` `D` |
 | Saltar | `Espacio`, `↑` o `W` (altura variable: suelta para saltar menos) |
 | Correr | `Shift` (o `X`) |
-| Reiniciar nivel | `R` |
-| Pausa | `P` |
-| Silenciar | `M` |
-| Panel de sprite | `S` · Frames: `H` · Opciones: `O` |
-| Avanzar 1 frame (en pausa) | `F` |
-| Modo invulnerable | `G` |
+| Reiniciar nivel | `R` · Pausa `P` · Silenciar `M` |
+| Panel de personaje | `S` · Frames: `H` · Opciones: `O` |
+| Avanzar 1 frame (en pausa) | `F` · Modo invulnerable `G` |
 
-En móvil aparecen controles táctiles (joystick de dirección + salto).
+En móvil aparecen controles táctiles.
 
 ---
 
-## Los frames del héroe
+## El personaje y sus frames
 
-El personaje está dibujado a mano como arte ASCII en `tools/hero-parts.mjs`
-(16×24 px) y se compone por capas —cabeza, torso, brazos, piernas, cola de la
-bandana— así que se pueden variar poses sin redibujar el resto. El contorno
-oscuro se genera automáticamente alrededor de la silueta y entre los brazos y
-el cuerpo.
+El robot se dibuja por **piezas** (cabeza, torso, brazos, pies) en
+`tools/robot.mjs`, con la misma paleta y la misma construcción que tu imagen:
+cabeza grande con orejas de gato, visor azul marino con ojos cian, aros
+laterales, casco azul con placa blanca en la barriga y emblema de anillo
+naranja, brazos segmentados con puños y pies pequeños. Al salir todos los
+frames del mismo modelo, las animaciones son coherentes entre sí.
 
-| Animación | Frames | Uso en el juego |
+| Animación | Frames | Qué hace |
 | --- | --- | --- |
-| `idle` | 4 | quieto: respira, parpadea y la bandana se mueve |
+| `idle` | 4 | respira, parpadea y las orejas se mueven |
 | `walk` | 6 | ciclo de caminar (contacto, apoyo, paso × 2) |
 | `run` | 6 | zancada inclinada con fase de vuelo |
 | `jump` | 2 | impulso con las piernas recogidas |
 | `fall` | 2 | caída con los brazos abiertos |
 
-La máquina de estados del juego elige la animación por velocidad y estado de
-suelo, y ajusta los FPS a la velocidad real, con *coyote time* (0,09 s) y
-buffer de salto (0,12 s) para que controlar al personaje sea agradable.
+Cada animación existe en **las tres vistas y en los dos sentidos**:
+
+| Hoja | Qué contiene |
+| --- | --- |
+| `assets/robot-front-sheet.png` | de frente (20 frames) |
+| `assets/robot-side-sheet.png` | perfil mirando a la derecha |
+| `assets/robot-left-sheet.png` | perfil mirando a la **izquierda** (espejo exacto) |
+| `assets/robot-right-sheet.png` | igual que el perfil (movimiento a la derecha) |
+| `assets/robot-back-sheet.png` | de espaldas |
+| `assets/robot-front-left-sheet.png` / `-right-sheet.png` | de frente mirando a cada lado |
+| `assets/robot-referencia.png` | todas las vistas y animaciones, ampliadas y etiquetadas |
+| `assets/plantilla-hoja-sprites.png` | plantilla vacía para dibujar tus propias hojas |
+
+Layout de cada hoja: **una fila por animación** (idle, walk, run, jump, fall),
+**una columna por frame**, celdas de 44×56 px, fondo transparente y el
+personaje apoyado abajo (ancla centro-abajo). El juego escala la altura del
+personaje a ~30 px en pantalla.
 
 ### Regenerar el arte
 
 ```bash
-node tools/build.mjs
+node tools/build-robot.mjs
 ```
 
-Genera:
-
-- `assets/hero-sheet.png` — hoja de sprites (filas = animaciones, columnas = frames)
-- `assets/hoja-heroe-etiquetada.png` — la misma hoja ampliada ×6 y con etiquetas
-- `assets/plantilla-hoja-sprites.png` — plantilla vacía para dibujar tu propia hoja
-- `js/hero-frames.js` — los frames como datos que consume el juego
-- `js/hero-png.js` — la hoja embebida en base64 (permite abrir el HTML con `file://`)
-
----
-
-## Usar tu propio sprite
-
-1. Pulsa **Sprite** en el juego (o `S`).
-2. **Elegir PNG…** o arrastra la imagen sobre el recuadro del juego.
-3. El juego intenta **detectar la rejilla** automáticamente separando los frames
-   por las zonas transparentes; si tu hoja no tiene separación, ajusta
-   *Ancho de frame*, *Alto de frame*, *Separación* y el número de frames por
-   animación, y pulsa **Aplicar**.
-
-Requisitos de la hoja:
-
-- fondo **transparente** (PNG);
-- **una fila por animación**, en el orden que elijas en el desplegable
-  (por defecto `idle → walk → run → jump → fall`);
-- el personaje **apoyado abajo** dentro de cada celda: el juego ancla cada frame
-  por el centro-abajo (los pies) y escala la altura del sprite a ~30 px, así que
-  el tamaño en píxeles de la hoja es libre;
-- la caja de colisión se calcula del tamaño del frame, y el salto del personaje
-  mide siempre 2 alturas de su propio cuerpo, por lo que cualquier sprite
-  mantiene el nivel jugable.
-
-Si una fila falta, se reutiliza la animación disponible más parecida
-(si no hay `run` se usa `walk`, si no hay `jump`/`fall` se usa `idle`).
-
-Puedes empezar por `assets/plantilla-hoja-sprites.png`.
+Genera todas las hojas PNG, la referencia etiquetada, la plantilla y
+`js/robot-sheet.js` (las tres hojas embebidas en base64, para que `index.html`
+funcione incluso abriéndolo con `file://`).
 
 ---
 
@@ -97,37 +82,56 @@ Puedes empezar por `assets/plantilla-hoja-sprites.png`.
 
 - Nivel de 2.760 px con plataformas, monedas, enemigos que patrullan y meta.
 - Física de plataformas: aceleración, fricción, gravedad, salto de altura
-  variable y huecos de 44 px medidos para cruzarse justo andando.
+  variable (2 alturas del personaje), *coyote time* y buffer de salto.
 - 3 corazones, invulnerabilidad tras un golpe, reaparición en el último punto
-  seguro, contador de tiempo, monedas y puntos.
-- Aplasta enemigos cayendo encima (rebote de ~40 px); si te tocan de lado, daño.
-- Fondo con parallax en 3 capas, partículas, sacudida de cámara y efectos de
-  sonido sintetizados con WebAudio (sin archivos de audio).
-- `Opciones`: piloto automático (el héroe se juega el nivel solo, útil para ver
-  todas las animaciones seguidas), puntos de colisión, sombras, parallax,
-  velocidad del juego y contador de FPS.
-- El panel **Frames** muestra todos los frames del sprite activo con zoom y
-  animación en vivo, resaltando el frame que el motor está usando.
+  seguro, tiempo, monedas y puntos.
+- Aplasta enemigos cayendo encima; de lado, te hacen daño.
+- Fondo con parallax en 3 capas, partículas, sacudida de cámara y sonidos
+  sintetizados con WebAudio (sin archivos de audio).
+- Panel **Frames**: todos los frames de la vista activa, con zoom y animación.
+- Panel **Opciones**: piloto automático (el robot se juega el nivel solo, útil
+  para ver todas las animaciones), andar de frente, puntos de colisión,
+  sombras, parallax, velocidad y FPS.
+
+### Cambiar de vista
+
+- **Auto** (por defecto): perfil al moverse —izquierda o derecha según hacia
+  dónde vaya—, frente al pararse y espaldas tras unos segundos quieto.
+- **Frente / Perfil / Espaldas**: fija la vista a mano.
+- En Opciones, *«andar de frente»* deja el robot mirando al frente mientras
+  camina o corre (el sprite se espeja hacia el lado de la marcha).
+
+---
+
+## Usar otro sprite
+
+En el panel **Sprite → Cargar otro sprite** puedes subir tu propio PNG: el
+juego intenta **detectar la rejilla** automáticamente por las zonas
+transparentes y, si no, ajustas ancho/alto de frame y frames por fila a mano.
+Requisitos: fondo transparente, una fila por animación en el orden
+`idle, walk, run, jump, fall` y el personaje apoyado abajo de cada celda.
+Puedes empezar por `assets/plantilla-hoja-sprites.png`.
 
 ---
 
 ## Estructura
 
 ```
-index.html                  interfaz: lienzo, HUD, paneles, overlays
-css/style.css               estilos (tema oscuro arcade, responsive)
-js/sprites.js               hojas de sprites: generar, recortar, detectar rejilla
-js/input.js                 teclado + táctil, buffer de salto
-js/audio.js                 efectos WebAudio
-js/game.js                  motor: física, animaciones, entidades, render
-js/ui.js                    HUD, overlays, panel de sprite e inspector
-js/hero-frames.js           frames del héroe (generado)
-js/hero-png.js              hoja embebida en base64 (generado)
-assets/                     hojas y previsualizaciones del arte
-tools/hero-parts.mjs        taller de pixel art por capas
-tools/build.mjs             genera hojas, datos y previsualizaciones
-tools/smoke-test.mjs        18 comprobaciones automáticas (jsdom)
-tools/render-shot.mjs       "capturas" del juego sin navegador
+index.html                 interfaz: lienzo, HUD, paneles, overlays
+css/style.css              estilos (tema oscuro arcade, responsive)
+js/robot-sheet.js          las hojas del robot en base64 (generado)
+js/sprites.js              hojas de sprites: recortar, detectar rejilla, espejar
+js/input.js                teclado + táctil, buffer de salto
+js/audio.js                efectos WebAudio
+js/game.js                 motor: física, animaciones, vistas, entidades, render
+js/ui.js                   HUD, overlays, panel de personaje e inspector
+assets/                    hojas del robot, referencia y plantilla
+tools/robot.mjs            el robot por piezas y todas las poses
+tools/pixel.mjs            lienzo de pixel art (formas, contorno, composición)
+tools/png.mjs              codificar/decodificar PNG sin dependencias
+tools/build-robot.mjs      genera hojas, plantilla y datos
+tools/smoke-test.mjs       21 comprobaciones automáticas (jsdom)
+tools/render-shot.mjs      "capturas" del juego sin navegador
 ```
 
 ## Pruebas
@@ -138,12 +142,14 @@ node tools/smoke-test.mjs
 ```
 
 Comprueba el arranque, las cuatro animaciones de movimiento, el salto de dos
-alturas, el render, la recogida de monedas, el aplastado de enemigos, que el
-piloto automático completa el nivel, la carga de un sprite propio y que el panel
-de interfaz funciona. `node tools/render-shot.mjs` dibuja escenas reales del
-juego a PNG usando un canvas simulado.
+alturas, el render, monedas y enemigos, que el piloto automático completa el
+nivel, que las cinco hojas del robot están disponibles y **que la vista cambia
+al caminar a la derecha, a la izquierda y al pararse**.
+`node tools/render-shot.mjs` dibuja escenas reales del juego a PNG usando un
+canvas simulado (incluidos primeros planos del personaje en cada vista).
 
 ## Créditos
 
-Arte, código y sonido generados para este repositorio; sin dependencias en
-tiempo de ejecución.
+Personaje original (robot-gato) y diseño de referencia: el usuario.
+Frames, motor, arte del escenario y sonido generados para este repositorio;
+sin dependencias en tiempo de ejecución.
