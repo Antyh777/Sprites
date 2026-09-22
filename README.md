@@ -190,13 +190,16 @@ tools/fake-canvas.mjs      canvas simulado + arranque del juego en jsdom
 tools/smoke-test.mjs       21 comprobaciones automáticas (jsdom)
 tools/render-shot.mjs      "capturas" del juego sin navegador
 tools/motion-test.mjs      simulador de movimiento + informe y GIFs
+tools/lab-test.mjs         comprobaciones del laboratorio (jsdom)
 ```
 
 ## Pruebas
 
 ```bash
 npm install jsdom          # única dependencia, solo para las pruebas
-node tools/smoke-test.mjs
+node tools/smoke-test.mjs  # 21 comprobaciones del juego y las hojas
+node tools/lab-test.mjs    # 16 comprobaciones del laboratorio de movimiento
+node tools/motion-test.mjs # simulador: informe, cobertura y GIFs en assets/
 ```
 
 Comprueba el arranque, las cuatro animaciones de movimiento, el salto de dos
@@ -205,7 +208,11 @@ nivel, que las cinco hojas del robot están disponibles y **que la vista cambia
 al caminar a la derecha, a la izquierda y al pararse**.
 `node tools/render-shot.mjs` dibuja escenas reales del juego a PNG usando un
 canvas simulado (incluidos primeros planos del personaje en cada vista).
-El canvas simulado y el arranque del juego en jsdom viven en
+`node tools/lab-test.mjs` arranca `lab.html` en el mismo entorno simulado y
+comprueba que el laboratorio mueve al personaje con las teclas, que la vista
+acompaña a la animación, que el guion toca las cuatro hojas y que la cobertura
+esperada llega al 100 %, además de que el lienzo dibuja de verdad.
+El canvas simulado y el arranque de las páginas en jsdom viven en
 `tools/fake-canvas.mjs`, compartido por todas las herramientas de prueba.
 
 ## Créditos

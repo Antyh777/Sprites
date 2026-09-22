@@ -314,11 +314,15 @@ export function toPNG(surf) {
 /* ============================ arranque del juego ==================== */
 
 /**
- * Levanta index.html en jsdom con el canvas simulado y devuelve el juego.
- * @returns {Promise<object>} { window, Game, Sprites, Input, UI, views, ... }
+ * Levanta una página del proyecto en jsdom con el canvas simulado puesto.
+ * Los scripts se evalúan a mano (jsdom no ejecuta los del HTML).
+ *
+ * @param {string} file  página a cargar, p. ej. 'index.html' o 'lab.html'
+ * @param {string[]} scripts  archivos js a evaluar, en orden
+ * @returns {{window: object, dom: object}}
  */
-export async function bootGame(opts = {}) {
-  const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8')
+export function fakeWindow(file = 'index.html', scripts = []) {
+  const html = readFileSync(resolve(ROOT, file), 'utf8')
     .replace(/<script[^>]*><\/script>/g, '');
   const dom = new JSDOM(html, {
     url: 'https://example.com/',
@@ -359,12 +363,25 @@ export async function bootGame(opts = {}) {
     get src() { return this._src; }
   };
 
-  const scripts = [
-    'js/robot-sheet.js', 'js/sprites.js', 'js/input.js',
-    'js/audio.js', 'js/game.js', 'js/ui.js',
-  ];
   for (const f of scripts) window.eval(readFileSync(resolve(ROOT, f), 'utf8'));
+  return { window, dom };
+}
 
+/** Los scripts del juego, en orden de carga */
+export const GAME_SCRIPTS = [
+  'js/robot-sheet.js', 'js/sprites.js', 'js/input.js',
+  'js/audio.js', 'js/game.js', 'js/ui.js',
+];
+
+/** Los mismos, sin la interfaz del juego: es lo que carga lab.html */
+export const LAB_SCRIPTS = GAME_SCRIPTS.filter((f) => f !== 'js/ui.js').concat(['js/lab.js']);
+
+/**
+ * Levanta index.html en jsdom con el canvas simulado y devuelve el juego.
+ * @returns {Promise<object>} { window, Game, Sprites, Input, UI, views, ... }
+ */
+export async function bootGame(opts = {}) {
+  const { window, dom } = fakeWindow('index.html', GAME_SCRIPTS);
   const { Game, Sprites, Input, UI } = window;
   window.document.getElementById('game').width = Game.VIEW.w;
   window.document.getElementById('game').height = Game.VIEW.h;
