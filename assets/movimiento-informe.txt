@@ -1,0 +1,90 @@
+INFORME DE MOVIMIENTO · robot-gato 44x56
+================================================================
+
+Guion simulado: 22.3 s · 1335 frames de juego
+Caídas fuera del mundo: 0  ·  reapariciones: 1
+
+SECUENCIA OBSERVADA (vista/animación)
+----------------------------------------------------------------
+    0.02 s  front/idle             1.20 s
+    1.22 s  right/walk             2.00 s
+    3.22 s  right/run              2.23 s
+    5.45 s  right/jump             0.17 s
+    5.62 s  right/fall             0.18 s
+    5.80 s  right/walk             0.03 s
+    5.83 s  right/run              0.38 s
+    6.22 s  right/jump             0.32 s
+    6.53 s  right/fall             0.33 s
+    6.87 s  right/run              0.10 s
+    6.97 s  right/fall             0.40 s
+    7.37 s  front/idle             0.02 s
+    7.38 s  right/walk             0.08 s
+    7.47 s  right/run              0.33 s
+    7.80 s  right/walk             0.07 s
+    7.87 s  front/idle             1.40 s
+    9.27 s  left/walk              2.00 s
+   11.27 s  left/run               3.00 s
+   14.27 s  left/jump              0.32 s
+   14.58 s  left/fall              0.33 s
+   14.92 s  left/run               0.38 s
+   15.30 s  left/walk              0.07 s
+   15.37 s  front/idle             3.50 s
+   18.87 s  back/idle              2.40 s
+   21.27 s  right/walk             1.00 s
+
+PASOS DEL GUION
+----------------------------------------------------------------
+  quieto (idle, vista frontal)           vistas: front · idle
+  andar a la derecha                     vistas: right · walk
+  correr a la derecha                    vistas: right · run+jump+fall+walk
+  salto en carrera                       vistas: right · jump+fall
+  caída tras el salto                    vistas: right+front · fall+run+idle+walk
+  frenar (idle)                          vistas: right+front · run+walk+idle
+  andar a la izquierda                   vistas: left · walk
+  correr a la izquierda                  vistas: left · run
+  salto hacia la izquierda               vistas: left · jump+fall+run
+  quieto de nuevo                        vistas: left+front · run+walk+idle
+  mucho rato quieto (vista de espaldas)  vistas: front+back · idle
+  volver a andar                         vistas: right · walk
+
+COBERTURA DE FRAMES POR HOJA
+----------------------------------------------------------------
+  FRONT (de frente)
+    idle   ████  4/4
+    walk   ······  0/6  ← faltan 6
+    run    ······  0/6  ← faltan 6
+    jump   ··  0/2  ← faltan 2
+    fall   ··  0/2  ← faltan 2
+  SIDE (perfil, derecha)
+    idle   ····  0/4  ← faltan 4
+    walk   ██████  6/6
+    run    ██████  6/6
+    jump   ██  2/2
+    fall   ██  2/2
+  LEFT (perfil, izquierda)
+    idle   ····  0/4  ← faltan 4
+    walk   ██████  6/6
+    run    ██████  6/6
+    jump   ██  2/2
+    fall   ██  2/2
+  BACK (espaldas)
+    idle   ████  4/4
+    walk   ······  0/6  ← faltan 6
+    run    ······  0/6  ← faltan 6
+    jump   ··  0/2  ← faltan 2
+    fall   ··  0/2  ← faltan 2
+
+COMPROBACIONES
+----------------------------------------------------------------
+   ok  se usan las cinco animaciones — idle, walk, run, jump, fall
+   ok  se usan las dos vistas laterales (izquierda y derecha) — derecha=true izquierda=true
+   ok  quieto usa la vista frontal
+   ok  tras varios segundos quieto se ve de espaldas
+   ok  el salto y la caída tienen sus frames
+   ok  no hay saltos de posición inexplicables
+   ok  las animaciones que aparecen muestran TODOS sus frames
+   ok  el ciclo completo de caminar/correr/saltar/caer se ve en ambas direcciones
+   ok  ningún frame se muestra solo un instante (parpadeo)
+   ok  el ritmo de la animación es coherente (≥ 4 frames de juego por frame de sprite) — 5.9 frames de juego por frame de sprite
+
+10/10 comprobaciones correctas

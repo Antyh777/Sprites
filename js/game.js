@@ -22,6 +22,7 @@
   var JUMP_VY = -355;          // sube ~60 px (2 alturas del personaje)
   var JUMP_CUT = 0.42;         // al soltar el boton de salto
   var COYOTE = 0.09;
+var MOVE_EPS = 10;            // px/s: por debajo se considera quieto
   var STEP = 1 / 60;
 
   var GROUND_TOP = 176;
@@ -180,16 +181,21 @@
       this.sheetDefaults = sheet;
     },
 
-    /** Vista que corresponde al estado actual del jugador */
-    viewFor: function (p) {
+    /**
+     * Vista que corresponde al estado actual del jugador.
+     * Se deriva de la animación ya calculada, así la hoja frontal nunca
+     * reproduce caminar/correr (y el perfil nunca reproduce el reposo):
+     *   animación de movimiento → perfil, según la dirección
+     *   quieto                  → de frente; tras unos segundos, de espaldas
+     */
+    viewFor: function (p, animName) {
       if (this.options.frontWalk) return 'front';
       if (this.viewMode !== 'auto') {
         if (this.viewMode === 'side') return p.facing < 0 ? 'left' : 'right';
         return this.viewMode;
       }
-      var moving = Math.abs(p.vx) > 12;
-      if (!p.onGround || moving) return p.facing < 0 ? 'left' : 'right';
-      // quieto: de frente; tras unos segundos se gira de espaldas
+      var anim = animName || p.anim;
+      if (anim !== 'idle') return p.facing < 0 ? 'left' : 'right';
       return this.idleTime > 3.5 ? 'back' : 'front';
     },
 
@@ -219,7 +225,7 @@
         x: 40, y: GROUND_TOP - h, w: w, h: h,
         vx: 0, vy: 0, facing: 1, onGround: true,
         coyote: 0, canCut: false, invuln: 0,
-        anim: 'idle', animTime: 0, frame: 0, prevAnim: '',
+        anim: 'idle', animTime: 0, phase: 0, fps: 5, frame: 0, prevAnim: '',
         spawn: { x: 40, y: GROUND_TOP - h },
         deathTimer: 0,
       };
@@ -348,14 +354,13 @@
         p.spawn.y = p.y;
       }
 
-      // vista del personaje: lateral al moverse, frontal al quedarse quieto
-      this.idleTime = Math.abs(p.vx) < 12 && p.onGround ? (this.idleTime || 0) + dt : 0;
-      var wanted = this.viewFor(p);
+      // 1) estado de animación según la física, 2) vista que le corresponde
+      this.updateAnimation(dt);
+      this.idleTime = p.anim === 'idle' ? (this.idleTime || 0) + dt : 0;
+      var wanted = this.viewFor(p, p.anim);
       if (wanted && wanted !== this.currentView && this.views && this.views[wanted]) {
         this.setView(wanted);
       }
-
-      this.updateAnimation(dt);
       this.updateCoins(dt);
       this.updateEnemies(dt);
       this.updateParticles(dt);
@@ -409,12 +414,13 @@
       var name;
       if (!p.onGround) name = p.vy < -12 ? 'jump' : 'fall';
       else if (speed > SPEED.walk * 1.14) name = 'run';
-      else if (speed > 8) name = 'walk';
+      else if (speed > MOVE_EPS) name = 'walk';
       else name = 'idle';
 
       if (name !== p.anim) {
         p.anim = name;
         p.animTime = 0;
+        p.phase = 0;          // cada animación empieza por su primer frame
       }
       p.animTime += dt;
 
@@ -423,9 +429,13 @@
       else if (name === 'run') fps = 4 + speed * 0.085;
       else if (name === 'idle') fps = 5;
       else fps = 6;
+      p.fps = fps;
 
+      // la fase avanza de forma continua aunque cambie la velocidad: así el
+      // sprite no salta de frame ni parpadea cuando acelera o frena
+      p.phase += dt * fps;
       var frames = this.framesOf(name);
-      var idx = Math.floor(p.animTime * fps) % frames.length;
+      var idx = Math.floor(p.phase) % frames.length;
       p.frame = idx < 0 ? 0 : idx;
     },
 

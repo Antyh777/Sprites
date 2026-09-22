@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio de movimiento · robot-gato</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/lab.css">
+</head>
+<body class="lab">
+
+<header class="lab-head">
+  <h1>Laboratorio de movimiento</h1>
+  <p>
+    Entorno de pruebas del robot-gato. Usa el <b>motor real del juego</b>
+    (misma física, mismas animaciones y mismo cambio de vista) sobre un
+    escenario limpio, para comprobar los frames de cada dirección.
+  </p>
+  <nav>
+    <a class="btn small" href="index.html">← Volver al juego</a>
+    <a class="btn small" href="assets/movimiento-informe.txt" target="_blank">Informe automático</a>
+    <a class="btn small" href="assets/movimiento-cobertura.png" target="_blank">Cobertura de frames</a>
+  </nav>
+</header>
+
+<main class="lab-main">
+
+  <!-- ===================== escenario ===================== -->
+  <section class="lab-stage">
+    <div class="lab-canvas-wrap">
+      <canvas id="lab" width="384" height="216"></canvas>
+      <div class="lab-readout" id="readout"></div>
+    </div>
+
+    <div class="lab-controls">
+      <div class="group">
+        <span class="group-title">Modo</span>
+        <button class="btn small" data-mode="drive">🎮 Conducir</button>
+        <button class="btn small" data-mode="auto">▶ Guion automático</button>
+        <button class="btn small" data-mode="manual">📋 Frame a frame</button>
+      </div>
+
+      <div class="group" id="manual-group" hidden>
+        <span class="group-title">Vista</span>
+        <select id="sel-view">
+          <option value="front">Frente</option>
+          <option value="side">Perfil (derecha)</option>
+          <option value="left">Perfil (izquierda)</option>
+          <option value="back">Espaldas</option>
+        </select>
+        <span class="group-title">Animación</span>
+        <select id="sel-anim"></select>
+        <button class="btn small" id="btn-prev">◀</button>
+        <b id="frame-label">1</b>
+        <button class="btn small" id="btn-next">▶</button>
+      </div>
+
+      <div class="group">
+        <span class="group-title">Velocidad</span>
+        <input type="range" id="speed" min="0.1" max="2" step="0.1" value="1">
+        <b id="speed-label">×1.0</b>
+        <label class="check"><input type="checkbox" id="onion"> superponer frame anterior</label>
+        <label class="check"><input type="checkbox" id="markers" checked> marcas de distancia</label>
+        <label class="check"><input type="checkbox" id="planks"> plataformas del nivel</label>
+        <label class="check"><input type="checkbox" id="frontwalk"> frente caminando (opción del juego)</label>
+        <button class="btn small" id="btn-reset">↺ Reiniciar</button>
+      </div>
+    </div>
+
+    <p class="lab-hint">
+      <b>Conducir:</b> <kbd>←</kbd><kbd>→</kbd> moverse · <kbd>Shift</kbd> correr ·
+      <kbd>Espacio</kbd> saltar · <kbd>R</kbd> reiniciar.
+      <b>Guion automático:</b> recorre andar → correr → saltar → caer → girar → quedarse quieto.
+    </p>
+  </section>
+
+  <!-- ===================== paneles ===================== -->
+  <aside class="lab-side">
+
+    <section class="card">
+      <h2>Hoja activa</h2>
+      <p class="lab-note">Se resalta el frame que el motor está dibujando ahora mismo.</p>
+      <div class="strip" id="strip"></div>
+      <p class="lab-note" id="strip-info"></p>
+    </section>
+
+    <section class="card">
+      <h2>Registro de vistas</h2>
+      <p class="lab-note">Qué vista eligió el motor en cada momento (últimos 12 s).</p>
+      <div class="timeline" id="timeline"></div>
+      <div class="legend">
+        <span><i style="background:#57b6ff"></i>frente</span>
+        <span><i style="background:#8ef2a8"></i>perfil der.</span>
+        <span><i style="background:#ffd166"></i>perfil izq.</span>
+        <span><i style="background:#c792ea"></i>espaldas</span>
+      </div>
+      <p class="lab-note" id="view-counts"></p>
+    </section>
+
+    <section class="card">
+      <h2>Cobertura en esta sesión</h2>
+      <div class="coverage" id="coverage"></div>
+      <p class="lab-note" id="coverage-total"></p>
+      <p class="lab-note">
+        Cada cuadro es un frame de la hoja; en gris, los que faltan.
+        En modo automático el robot quieto usa la hoja frontal y, al moverse, los
+        perfiles; las filas atenuadas sólo se ven con «frente caminando» activado
+        o en el modo frame a frame.
+      </p>
+    </section>
+
+  </aside>
+</main>
+
+<!-- datos y motor del juego (sin interfaz) -->
+<script src="js/robot-sheet.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/lab.js"></script>
+</body>
+</html>

@@ -325,3 +325,11 @@ a.link:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .card h1 { font-size: 22px; letter-spacing: 3px; }
   .keys { display: none; }
 }
+
+/* enlace al laboratorio dentro de los botones de acción */
+.actions a.btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.overlay .keys a { color: var(--accent-2); }

@@ -114,24 +114,82 @@ Puedes empezar por `assets/plantilla-hoja-sprites.png`.
 
 ---
 
+## Probar el movimiento
+
+### Laboratorio interactivo (`lab.html`)
+
+Abre **`lab.html`** (enlace «Laboratorio» en la cabecera del juego). Usa el
+**motor real** —misma física, misma máquina de animación y mismo cambio de
+vista— sobre un escenario limpio: suelo continuo, sin monedas, sin enemigos y
+sin meta, con marcas de distancia cada 32 px y flecha de dirección.
+
+- **Conducir**: flechas para andar, `Shift` para correr, `Espacio` para saltar, `R` para reiniciar.
+- **Guion automático**: recorre quieto → andar → correr → saltar → caer → frenar,
+  y lo repite hacia el otro lado; al final se queda quieto para enseñar la vista
+  de espaldas.
+- **Frame a frame**: eliges vista, animación y frame a mano (con el anterior
+  superpuesto si quieres) para revisar el arte detenidamente.
+
+Los paneles laterales muestran, en vivo, la hoja activa con el frame que el motor
+está dibujando, el registro de vistas (quién manda en cada momento) y la
+**cobertura de frames de la sesión**: cada cuadro es un frame de la hoja y se
+pone verde cuando se ha visto. Con el guion automático se llega al 100 % de lo que
+le toca a cada hoja (40/40); activando «frente caminando» se ve la hoja frontal
+completa en marcha (20/20).
+
+### Simulador automático (`tools/motion-test.mjs`)
+
+El mismo entorno, pero sin navegador y con salida revisable:
+
+```bash
+node tools/motion-test.mjs
+```
+
+Ejecuta un guion de 22 s (~1.335 frames de juego) pulsando las teclas reales del
+motor y escribe en `assets/`:
+
+| Archivo | Qué es |
+| --- | --- |
+| `movimiento-informe.txt` | secuencia de vista/animación, cobertura por hoja y resultado de las 10 comprobaciones |
+| `movimiento-cobertura.png` | mapa de calor: frame de cada hoja visto o no |
+| `movimiento-perfil.gif` | andar, correr, saltar y caer en perfil (derecha e izquierda) |
+| `movimiento-frente.gif` | reposo, andar, correr y salto con la hoja frontal |
+| `movimiento-espaldas.gif` | la hoja de espaldas completa |
+| `movimiento-juego.gif` | el guion jugado dentro del nivel real |
+
+Las comprobaciones cubren que se usan las cinco animaciones, que aparecen las dos
+vistas laterales, que quieto se ve de frente y tras unos segundos de espaldas,
+que el salto y la caída tienen sus frames, que no hay saltos de posición
+inexplicables, que **las animaciones que aparecen muestran todos sus frames**,
+que el ciclo completo se ve en ambas direcciones, que ningún frame parpadea y que
+el ritmo es coherente (≥ 4 frames de juego por frame de sprite). Si alguna falla,
+el comando termina con código 1.
+
+---
+
 ## Estructura
 
 ```
 index.html                 interfaz: lienzo, HUD, paneles, overlays
+lab.html                   laboratorio de movimiento (entorno de pruebas)
 css/style.css              estilos (tema oscuro arcade, responsive)
+css/lab.css                estilos del laboratorio
 js/robot-sheet.js          las hojas del robot en base64 (generado)
 js/sprites.js              hojas de sprites: recortar, detectar rejilla, espejar
 js/input.js                teclado + táctil, buffer de salto
 js/audio.js                efectos WebAudio
 js/game.js                 motor: física, animaciones, vistas, entidades, render
 js/ui.js                   HUD, overlays, panel de personaje e inspector
+js/lab.js                  lógica del laboratorio de movimiento
 assets/                    hojas del robot, referencia y plantilla
 tools/robot.mjs            el robot por piezas y todas las poses
 tools/pixel.mjs            lienzo de pixel art (formas, contorno, composición)
 tools/png.mjs              codificar/decodificar PNG sin dependencias
 tools/build-robot.mjs      genera hojas, plantilla y datos
+tools/fake-canvas.mjs      canvas simulado + arranque del juego en jsdom
 tools/smoke-test.mjs       21 comprobaciones automáticas (jsdom)
 tools/render-shot.mjs      "capturas" del juego sin navegador
+tools/motion-test.mjs      simulador de movimiento + informe y GIFs
 ```
 
 ## Pruebas
@@ -147,6 +205,8 @@ nivel, que las cinco hojas del robot están disponibles y **que la vista cambia
 al caminar a la derecha, a la izquierda y al pararse**.
 `node tools/render-shot.mjs` dibuja escenas reales del juego a PNG usando un
 canvas simulado (incluidos primeros planos del personaje en cada vista).
+El canvas simulado y el arranque del juego en jsdom viven en
+`tools/fake-canvas.mjs`, compartido por todas las herramientas de prueba.
 
 ## Créditos
 
