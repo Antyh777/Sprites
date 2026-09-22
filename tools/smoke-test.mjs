@@ -11,6 +11,7 @@
  * Uso:  node tools/smoke-test.mjs
  */
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { W as ROBOT_W, H as ROBOT_H } from './robot.mjs';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -272,7 +273,8 @@ const viewChecks = {};
 try {
   const meta = window.ROBOT_SHEET;
   viewChecks.sheets = meta && Object.keys(meta.sheets).length === 3;
-  viewChecks.dimensions = meta.w === 44 && meta.h === 56;
+  // el tamaño de celda debe ser el que declara el generador del arte
+  viewChecks.dimensions = meta.w === ROBOT_W && meta.h === ROBOT_H;
   viewChecks.counts = Game.views && Object.keys(Game.views).length === 5;
   const views = Game.views || {};
   viewChecks.anims = ['front', 'side', 'back', 'left', 'right'].every(

@@ -1,4 +1,4 @@
-INFORME DE MOVIMIENTO · robot-gato 44x56
+INFORME DE MOVIMIENTO · robot-gato 50x60
 ================================================================
 
 Guion simulado: 22.3 s · 1335 frames de juego

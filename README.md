@@ -62,9 +62,32 @@ Cada animación existe en **las tres vistas y en los dos sentidos**:
 | `assets/plantilla-hoja-sprites.png` | plantilla vacía para dibujar tus propias hojas |
 
 Layout de cada hoja: **una fila por animación** (idle, walk, run, jump, fall),
-**una columna por frame**, celdas de 44×56 px, fondo transparente y el
+**una columna por frame**, celdas de 50×60 px, fondo transparente y el
 personaje apoyado abajo (ancla centro-abajo). El juego escala la altura del
 personaje a ~30 px en pantalla.
+
+### Reglas del arte (y cómo se comprueban)
+
+El dibujo se compone en un espacio de 44×56 y se coloca dentro de la celda con
+2 px de margen (`OX`/`OY` en `tools/robot.mjs`), de modo que el contorno oscuro
+tiene sitio y ningún frame sale cortado:
+
+- todas las poses caben en la celda, con el contorno completo alrededor
+- cada frame es **una sola pieza** (ningún puño, pie u oreja sueltos)
+- el contorno es de **un solo píxel**: las piezas que ya venían contorneadas
+  (el pie delantero y el brazo del perfil) no acumulan un segundo anillo
+- los brazos nunca se salen: en el salto suben doblados por fuera de la cabeza
+  en vez de estirarse de lado, y el perfil no aplasta el ángulo del brazo
+- el pestañeo pinta un párpado oscuro visible y la vista de espaldas —que no
+  tiene ojos— no recibe párpados fantasma
+
+```bash
+node tools/check-frames.mjs
+```
+
+revisa las 60 poses y falla si el arte se sale de la celda, si hay piezas
+sueltas, si el contorno queda incompleto o doble, o si el tamaño de celda no
+coincide con el que declara `js/robot-sheet.js`.
 
 ### Regenerar el arte
 
@@ -191,6 +214,7 @@ tools/fake-canvas.mjs      canvas simulado + arranque del juego en jsdom
 tools/smoke-test.mjs       21 comprobaciones automáticas (jsdom)
 tools/render-shot.mjs      "capturas" del juego sin navegador
 tools/motion-test.mjs      simulador de movimiento + informe y GIFs
+tools/check-frames.mjs     valida el arte de los frames (60 poses)
 tools/lab-test.mjs         comprobaciones del laboratorio (jsdom)
 ```
 
@@ -198,6 +222,7 @@ tools/lab-test.mjs         comprobaciones del laboratorio (jsdom)
 
 ```bash
 npm install jsdom          # única dependencia, solo para las pruebas
+node tools/check-frames.mjs # arte de los frames: recortes, piezas, contorno
 node tools/smoke-test.mjs  # 21 comprobaciones del juego y las hojas
 node tools/lab-test.mjs    # 16 comprobaciones del laboratorio de movimiento
 node tools/motion-test.mjs # simulador: informe, cobertura y GIFs en assets/

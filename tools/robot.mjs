@@ -15,8 +15,8 @@
  */
 import { Pix } from './pixel.mjs';
 
-export const W = 44;
-export const H = 56;
+export const W = 50;
+export const H = 60;
 
 export const PALETTE = {
   '.': null,        // transparente
@@ -38,7 +38,7 @@ export const PALETTE = {
 };
 
 /* ====================================================================== */
-/* Geometría del personaje (vista frontal, 44x56)                         */
+/* Geometría del personaje (en su espacio de 44x56, sin el margen)       */
 /* ====================================================================== */
 
 const C = {
@@ -429,6 +429,15 @@ function foot(p, cx, cy, opts = {}) {
 /* ====================================================================== */
 
 /**
+ * Limita el ángulo de un brazo sin cambiar su dirección: escalarlo (como se
+ * hacía antes con *0.75) dejaba los brazos del perfil apuntando de lado en las
+ * poses de salto, porque un ángulo grande se acercaba a la horizontal.
+ */
+function clampAngle(a, max = 2.6) {
+  return Math.max(-max, Math.min(max, a));
+}
+
+/**
  * @param {'front'|'side'|'back'} view
  * @param {object} pose
  *   bob      desplazamiento vertical del cuerpo
@@ -438,8 +447,19 @@ function foot(p, cx, cy, opts = {}) {
  *   blink    ojos cerrados
  *   ear      {dy} orejas
  */
+/**
+ * El dibujo se compone en el espacio original de 44x56 y luego se coloca
+ * dentro del lienzo con este margen, que deja sitio para el contorno.
+ * Antes la celda era de 44x56 justos y el arte se salía: los aros de las
+ * orejas quedaban cortados a los lados y la suela por abajo.
+ */
+export const OX = 2;
+export const OY = 2;
+
 export function compose(view, pose) {
   const p = new Pix(W, H, PALETTE);
+  const dx0 = OX;      // margen del lienzo (deja sitio al contorno)
+  const dy0 = OY;
   const bob = pose.bob || 0;
   const lean = pose.lean || 0;
   const armF = pose.armFront || { a1: 0.12, a2: 0 };
@@ -451,36 +471,57 @@ export function compose(view, pose) {
 
   if (view === 'front') {
     // pies
-    foot(p, 17 + feet[0].dx, C.footY + C.footH - 1 + feet[0].dy + lift, {});
-    foot(p, 27 + feet[1].dx, C.footY + C.footH - 1 + feet[1].dy + lift, {});
+    foot(p, 17 + feet[0].dx + dx0, C.footY + C.footH - 1 + feet[0].dy + lift + dy0, {});
+    foot(p, 27 + feet[1].dx + dx0, C.footY + C.footH - 1 + feet[1].dy + lift + dy0, {});
     // brazos (detrás del torso)
-    arm(p, 9.5 + lean, C.shoulderY + bodyY, armB.a1, armB.a2);
-    arm(p, 34.5 + lean, C.shoulderY + bodyY, armF.a1, armF.a2);
+    arm(p, 9.5 + lean + dx0, C.shoulderY + bodyY + dy0, armB.a1, armB.a2);
+    arm(p, 34.5 + lean + dx0, C.shoulderY + bodyY + dy0, armF.a1, armF.a2);
     // torso y cabeza
-    torsoFrontOffset(p, lean, bodyY);
-    headOffset(p, 'front', lean, bodyY, pose);
+    torsoFrontOffset(p, lean + dx0, bodyY + dy0);
+    headOffset(p, 'front', lean + dx0, bodyY + dy0, pose);
   } else if (view === 'back') {
-    foot(p, 17 + feet[0].dx, C.footY + C.footH - 1 + feet[0].dy + lift, {});
-    foot(p, 27 + feet[1].dx, C.footY + C.footH - 1 + feet[1].dy + lift, {});
-    arm(p, 9.5 + lean, C.shoulderY + bodyY, armF.a1, armF.a2);
-    arm(p, 34.5 + lean, C.shoulderY + bodyY, armB.a1, armB.a2);
-    torsoBackOffset(p, lean, bodyY);
-    headOffset(p, 'back', lean, bodyY, pose);
+    foot(p, 17 + feet[0].dx + dx0, C.footY + C.footH - 1 + feet[0].dy + lift + dy0, {});
+    foot(p, 27 + feet[1].dx + dx0, C.footY + C.footH - 1 + feet[1].dy + lift + dy0, {});
+    arm(p, 9.5 + lean + dx0, C.shoulderY + bodyY + dy0, armF.a1, armF.a2);
+    arm(p, 34.5 + lean + dx0, C.shoulderY + bodyY + dy0, armB.a1, armB.a2);
+    torsoBackOffset(p, lean + dx0, bodyY + dy0);
+    headOffset(p, 'back', lean + dx0, bodyY + dy0, pose);
   } else {
     // perfil: pie de atrás, brazo de atrás (asoma), cuerpo, brazo delante, pie delante
-    foot(p, 19 + feet[0].dx * 0.6, C.footY + C.footH - 1 + feet[0].dy + lift, { w: 8 });
-    arm(p, 20 + lean, C.shoulderY + bodyY - 1, armB.a1 * 0.3, 0, { L1: 5.5, L2: 4.5 });
-    torsoSideOffset(p, lean, bodyY);
-    armOutlined(p, 25 + lean, C.shoulderY + bodyY, armF.a1 * 0.75, armF.a2 * 0.5, { L1: 6.5, L2: 6 });
+    foot(p, 19 + feet[0].dx * 0.6 + dx0, C.footY + C.footH - 1 + feet[0].dy + lift + dy0, { w: 8 });
+    arm(p, 20 + lean + dx0, C.shoulderY + bodyY - 1 + dy0, armB.a1 * 0.3, 0, { L1: 5.5, L2: 4.5 });
+    torsoSideOffset(p, lean + dx0, bodyY + dy0);
+    armOutlined(p, 25 + lean + dx0, C.shoulderY + bodyY + dy0,
+      clampAngle(armF.a1), armF.a2 * 0.5, { L1: 6.5, L2: 6 });
     // el pie delantero recortado contra el de atrás
-    footSeparation(p, 27 + feet[1].dx, C.footY + C.footH - 1 + feet[1].dy + lift, { w: 9 });
-    headOffset(p, 'side', lean, bodyY, pose);
+    footSeparation(p, 27 + feet[1].dx + dx0, C.footY + C.footH - 1 + feet[1].dy + lift + dy0, { w: 9 });
+    headOffset(p, 'side', lean + dx0, bodyY + dy0, pose);
   }
 
   // contorno exterior
   p.outline('K');
-  // separar cabeza/torso del fondo con una línea fina
+  // los pies y el brazo del perfil ya vienen contorneados: quitamos el anillo
+  // extra que el contorno global añadiría alrededor de ese contorno
+  trimOutline(p);
   return p;
+}
+
+/**
+ * Elimina los píxeles de contorno que no tocan la silueta. Sin esto, las
+ * piezas que ya venían contorneadas (pie delantero y brazo del perfil)
+ * acababan con dos filas de contorno y una base más gruesa que el resto.
+ */
+function trimOutline(p) {
+  const kill = [];
+  for (let y = 0; y < p.h; y++) {
+    for (let x = 0; x < p.w; x++) {
+      if (p.get(x, y) !== 'K') continue;
+      const around = [p.get(x - 1, y), p.get(x + 1, y), p.get(x, y - 1), p.get(x, y + 1)];
+      const touchesShape = around.some((n) => n && n !== '.' && n !== 'K');
+      if (!touchesShape) kill.push([x, y]);
+    }
+  }
+  kill.forEach(([x, y]) => p.set(x, y, '.'));
 }
 
 function torsoFrontOffset(p, dx, dy) {
@@ -510,19 +551,30 @@ function headOffset(p, view, dx, dy, pose) {
   p.blit(tmp, dx, dy);
 }
 
-/** Pestañeo: los ojos pasan a una línea oscura */
+/**
+ * Pestañeo: el ojo se cierra con un párpado oscuro bien visible.
+ * (Antes se borraba el ojo dejando sólo una línea del mismo azul marino del
+ * visor, y el resultado parecía un visor vacío; además el brillo del ojo se
+ * quedaba suelto y la vista de espaldas —que no tiene ojos— recibía párpados
+ * fantasma.)
+ */
 function closeEyes(p, view) {
+  if (view === 'back') return;               // de espaldas no hay ojos
   const spots = view === 'side'
-    ? [[27, 15.5, 5, 7]]
-    : [[13.5, 15.5, 6, 7], [24.5, 15.5, 6, 7]];
+    ? [[25, 15, 6, 8]]
+    : [[14, 16, 6, 7], [25, 16, 6, 7]];
   spots.forEach(([x, y, w, h]) => {
+    // borrar el ojo entero, brillo incluido
     for (let yy = 0; yy < h; yy++) {
       for (let xx = 0; xx < w; xx++) {
-        const v = p.get(Math.round(x) + xx, Math.round(y) + yy);
-        if (v === 'C' || v === 'c') p.set(Math.round(x) + xx, Math.round(y) + yy, 'n');
+        const v = p.get(x + xx, y + yy);
+        if (v === 'C' || v === 'c') p.set(x + xx, y + yy, 'n');
       }
     }
-    p.rect(Math.round(x) + 1, Math.round(y) + 3, w - 2, 1, 'm');
+    // párpado: barra oscura en el centro y las puntas un poco más altas
+    p.rect(x + 1, y + 2, w - 2, 2, 'm');
+    p.set(x + 1, y + 1, 'm');
+    p.set(x + w - 2, y + 1, 'm');
   });
 }
 
@@ -571,26 +623,32 @@ function runPoses() {
   return [
     { bob: -1, lean: 1, feet: [{ dx: -step, dy: -2 }, { dx: step * 0.8, dy: 0 }], armFront: { a1: -0.55, a2: -0.6 }, armBack: { a1: 0.5, a2: -0.45 } },
     { bob: 1, lean: 1, feet: [{ dx: -step * 0.6, dy: 0 }, { dx: step * 0.2, dy: 0 }], armFront: { a1: -0.25, a2: -0.45 }, armBack: { a1: 0.25, a2: -0.35 } },
-    { bob: -2, lean: 1, feet: [{ dx: 0, dy: -3 }, { dx: -step * 0.2, dy: -2 }], armFront: { a1: 0.1, a2: -0.6 }, armBack: { a1: -0.1, a2: -0.4 }, ear: -1 },
+    { bob: -1, lean: 1, feet: [{ dx: 0, dy: -3 }, { dx: -step * 0.2, dy: -2 }], armFront: { a1: 0.1, a2: -0.5 }, armBack: { a1: -0.1, a2: -0.35 }, ear: -1 },
     { bob: -1, lean: 1, feet: [{ dx: step, dy: 0 }, { dx: -step, dy: -2 }], armFront: { a1: 0.5, a2: -0.45 }, armBack: { a1: -0.55, a2: -0.6 } },
     { bob: 1, lean: 1, feet: [{ dx: step * 0.2, dy: 0 }, { dx: -step * 0.6, dy: 0 }], armFront: { a1: 0.25, a2: -0.35 }, armBack: { a1: -0.25, a2: -0.45 } },
-    { bob: -2, lean: 1, feet: [{ dx: -step * 0.2, dy: -2 }, { dx: 0, dy: -3 }], armFront: { a1: -0.1, a2: -0.4 }, armBack: { a1: 0.1, a2: -0.6 }, ear: -1 },
+    { bob: -1, lean: 1, feet: [{ dx: -step * 0.2, dy: -2 }, { dx: 0, dy: -3 }], armFront: { a1: -0.1, a2: -0.35 }, armBack: { a1: 0.1, a2: -0.5 }, ear: -1 },
   ];
 }
 
-/** Salto: impulso con las piernas recogidas y los brazos arriba */
+/**
+ * Salto: piernas recogidas y brazos hacia arriba.
+ * Los brazos se levantan con ángulos cercanos a ±2.6 rad (arriba y algo hacia
+ * fuera); con ±1.8 quedaban estirados de lado y las manos se salían del
+ * lienzo. El cuerpo sólo se separa del suelo 1 px: del aire se encarga el
+ * motor, que ya mueve al jugador.
+ */
 function jumpPoses() {
   return [
-    { lift: -1, bob: 0, feet: [{ dx: -2, dy: -3 }, { dx: 2, dy: -3 }], armFront: { a1: -0.95, a2: -0.35 }, armBack: { a1: 0.95, a2: -0.35 } },
-    { lift: -2, bob: -1, feet: [{ dx: -2.5, dy: -4 }, { dx: 2.5, dy: -4 }], armFront: { a1: -1.8, a2: -0.2 }, armBack: { a1: 1.8, a2: -0.2 }, ear: -1 },
+    { lift: -1, bob: 0, feet: [{ dx: -2, dy: -3 }, { dx: 2, dy: -3 }], armFront: { a1: 1.7, a2: 1.25 }, armBack: { a1: -1.7, a2: -1.25 } },
+    { lift: -1, bob: 0, feet: [{ dx: -2.5, dy: -5 }, { dx: 2.5, dy: -5 }], armFront: { a1: 1.85, a2: 1.3 }, armBack: { a1: -1.85, a2: -1.3 }, ear: -1 },
   ];
 }
 
 /** Caída: piernas abiertas buscando el suelo, brazos abiertos */
 function fallPoses() {
   return [
-    { lift: -1, feet: [{ dx: -3, dy: -1 }, { dx: 3, dy: -1 }], armFront: { a1: -0.8, a2: 0.35 }, armBack: { a1: 0.8, a2: 0.35 } },
-    { lift: 0, feet: [{ dx: -3.5, dy: 0 }, { dx: 3.5, dy: 0 }], armFront: { a1: -1.3, a2: 0.5 }, armBack: { a1: 1.3, a2: 0.5 }, blink: true },
+    { lift: -1, feet: [{ dx: -3, dy: -1 }, { dx: 3, dy: -1 }], armFront: { a1: -0.65, a2: 0.3 }, armBack: { a1: 0.65, a2: 0.3 } },
+    { lift: 0, feet: [{ dx: -3.5, dy: 0 }, { dx: 3.5, dy: 0 }], armFront: { a1: -0.7, a2: 0.1 }, armBack: { a1: 0.7, a2: 0.1 }, blink: true },
   ];
 }
 

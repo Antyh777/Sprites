@@ -122,7 +122,7 @@ function templateSheet(cols, rows, fw, fh, scale, labelW) {
   return t;
 }
 
-// plantilla: celdas de 44x56 transparentes, con marco y línea base
+// plantilla: celdas transparentes del tamaño de frame, con marco y línea base
 {
   const cols = Math.max(...ANIM_ORDER.map((a) => all.front[a].length));
   const scale = 2;
