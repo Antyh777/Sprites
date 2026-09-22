@@ -151,7 +151,7 @@ motor y escribe en `assets/`:
 | Archivo | Qué es |
 | --- | --- |
 | `movimiento-informe.txt` | secuencia de vista/animación, cobertura por hoja y resultado de las 10 comprobaciones |
-| `movimiento-cobertura.png` | mapa de calor: frame de cada hoja visto o no |
+| `movimiento-cobertura.png` | mapa de calor: frames usados (cian), que faltan (naranja) y los que no le tocan a esa vista (gris) |
 | `movimiento-perfil.gif` | andar, correr, saltar y caer en perfil (derecha e izquierda) |
 | `movimiento-frente.gif` | reposo, andar, correr y salto con la hoja frontal |
 | `movimiento-espaldas.gif` | la hoja de espaldas completa |
@@ -161,9 +161,10 @@ Las comprobaciones cubren que se usan las cinco animaciones, que aparecen las do
 vistas laterales, que quieto se ve de frente y tras unos segundos de espaldas,
 que el salto y la caída tienen sus frames, que no hay saltos de posición
 inexplicables, que **las animaciones que aparecen muestran todos sus frames**,
-que el ciclo completo se ve en ambas direcciones, que ningún frame parpadea y que
-el ritmo es coherente (≥ 4 frames de juego por frame de sprite). Si alguna falla,
-el comando termina con código 1.
+que el ciclo completo se ve en ambas direcciones, que **la cobertura esperada por
+hoja está completa (40/40)**, que ningún frame parpadea y que el ritmo es
+coherente (≥ 4 frames de juego por frame de sprite). Si alguna falla, el comando
+termina con código 1.
 
 ---
 

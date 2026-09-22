@@ -48,31 +48,32 @@ PASOS DEL GUION
   volver a andar                         vistas: right · walk
 
 COBERTURA DE FRAMES POR HOJA
+  █ visto   · falta   (no se usa en esta vista)
 ----------------------------------------------------------------
   FRONT (de frente)
     idle   ████  4/4
-    walk   ······  0/6  ← faltan 6
-    run    ······  0/6  ← faltan 6
-    jump   ··  0/2  ← faltan 2
-    fall   ··  0/2  ← faltan 2
+    walk   ······  0/6  (no se usa en esta vista)
+    run    ······  0/6  (no se usa en esta vista)
+    jump   ··  0/2  (no se usa en esta vista)
+    fall   ··  0/2  (no se usa en esta vista)
   SIDE (perfil, derecha)
-    idle   ····  0/4  ← faltan 4
+    idle   ····  0/4  (no se usa en esta vista)
     walk   ██████  6/6
     run    ██████  6/6
     jump   ██  2/2
     fall   ██  2/2
   LEFT (perfil, izquierda)
-    idle   ····  0/4  ← faltan 4
+    idle   ····  0/4  (no se usa en esta vista)
     walk   ██████  6/6
     run    ██████  6/6
     jump   ██  2/2
     fall   ██  2/2
   BACK (espaldas)
     idle   ████  4/4
-    walk   ······  0/6  ← faltan 6
-    run    ······  0/6  ← faltan 6
-    jump   ··  0/2  ← faltan 2
-    fall   ··  0/2  ← faltan 2
+    walk   ······  0/6  (no se usa en esta vista)
+    run    ······  0/6  (no se usa en esta vista)
+    jump   ··  0/2  (no se usa en esta vista)
+    fall   ··  0/2  (no se usa en esta vista)
 
 COMPROBACIONES
 ----------------------------------------------------------------
@@ -84,7 +85,8 @@ COMPROBACIONES
    ok  no hay saltos de posición inexplicables
    ok  las animaciones que aparecen muestran TODOS sus frames
    ok  el ciclo completo de caminar/correr/saltar/caer se ve en ambas direcciones
+   ok  la cobertura esperada por hoja está completa — 40/40 frames (100%)
    ok  ningún frame se muestra solo un instante (parpadeo)
    ok  el ritmo de la animación es coherente (≥ 4 frames de juego por frame de sprite) — 5.9 frames de juego por frame de sprite
 
-10/10 comprobaciones correctas
+11/11 comprobaciones correctas

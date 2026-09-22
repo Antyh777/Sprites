@@ -82,6 +82,16 @@ const SHEETS = [
 ];
 const sheetOfView = (view) => (SHEETS.find((s) => s.views.includes(view)) || SHEETS[0]).key;
 
+/**
+ * En modo automático la vista sigue a la animación: el robot quieto se ve de
+ * frente (o de espaldas tras un rato) y, al moverse, de perfil. Por eso cada
+ * hoja sólo tiene que mostrar unas animaciones concretas; las demás filas de
+ * la hoja existen en el arte (y se ven con la opción «frente caminando» o en
+ * el modo frame a frame del laboratorio), pero no corresponden aquí.
+ */
+const expectedAnims = (sheet) =>
+  (sheet === 'front' || sheet === 'back' ? ['idle'] : ['walk', 'run', 'jump', 'fall']);
+
 function resetCoverage() {
   Object.keys(coverage).forEach((k) => delete coverage[k]);
   SHEETS.forEach((sheet) => {
@@ -248,6 +258,25 @@ const locomotionGaps = [];
 check('el ciclo completo de caminar/correr/saltar/caer se ve en ambas direcciones',
   locomotionGaps.length === 0, locomotionGaps.join(' | '));
 
+// cobertura esperada: cada hoja muestra enteras las animaciones que le tocan
+const expectedGaps = [];
+let expectedSeen = 0;
+let expectedTotal = 0;
+SHEETS.forEach((sheet) => {
+  expectedAnims(sheet.key).forEach((anim) => {
+    const row = coverageTable.find((c) => c.view === sheet.key && c.anim === anim);
+    if (!row) return;
+    expectedTotal += row.total;
+    expectedSeen += row.seen;
+    if (row.missing > 0) expectedGaps.push(`${sheet.key}/${anim}: faltan ${row.missing}`);
+  });
+});
+check('la cobertura esperada por hoja está completa',
+  expectedGaps.length === 0 && expectedTotal > 0,
+  expectedGaps.length ? expectedGaps.join(' | ')
+    : expectedSeen + '/' + expectedTotal + ' frames (' +
+      Math.round((expectedSeen / expectedTotal) * 100) + '%)');
+
 // --- ritmo de la animación: ningún frame aparece menos de 3 frames de juego ---
 const runs = {};
 log.forEach((l) => {
@@ -334,6 +363,7 @@ stepReports.forEach((s) => {
 });
 lines.push('');
 lines.push('COBERTURA DE FRAMES POR HOJA');
+lines.push('  █ visto   · falta   (no se usa en esta vista)');
 lines.push('-'.repeat(64));
 SHEETS.forEach((sheet) => {
   const view = sheet.key;
@@ -341,8 +371,11 @@ SHEETS.forEach((sheet) => {
   ANIM_ORDER.forEach((anim) => {
     const row = coverageTable.find((c) => c.view === view && c.anim === anim);
     const bar = '█'.repeat(row.seen) + '·'.repeat(row.missing);
+    const applies = expectedAnims(view).indexOf(anim) >= 0;
+    const note = !applies ? '  (no se usa en esta vista)'
+      : row.missing ? '  ← faltan ' + row.missing : '';
     lines.push('    ' + anim.padEnd(6) + ' ' + bar.padEnd(row.total) +
-      '  ' + row.seen + '/' + row.total + (row.missing ? '  ← faltan ' + row.missing : ''));
+      '  ' + row.seen + '/' + row.total + note);
   });
 });
 lines.push('');
@@ -378,18 +411,21 @@ function coverageHeatmap() {
       const total = animTotals[anim];
       const seen = coverage[view][anim] || new Set();
       const y0 = gap + row * (cell + gap);
+      const applies = expectedAnims(view).indexOf(anim) >= 0;
       for (let i = 0; i < cols; i++) {
         const x0 = labelW + gap + i * (cell + gap);
         if (i >= total) continue;
         const ok = seen.has(i);
-        const base = ok ? 'G' : 'R';
+        // gris = el arte existe pero esa vista no reproduce esa animación
+        const base = !applies ? 'm' : ok ? 'C' : 'o';
         p.rect(x0, y0, cell, cell, base);
         // brillo del marco
+        const edge = !applies ? 'N' : ok ? 'c' : 'O';
         for (let k = 0; k < cell; k++) {
-          p.set(x0 + k, y0, ok ? 'b' : 'o');
-          p.set(x0 + k, y0 + cell - 1, ok ? 'b' : 'o');
-          p.set(x0, y0 + k, ok ? 'b' : 'o');
-          p.set(x0 + cell - 1, y0 + k, ok ? 'b' : 'o');
+          p.set(x0 + k, y0, edge);
+          p.set(x0 + k, y0 + cell - 1, edge);
+          p.set(x0, y0 + k, edge);
+          p.set(x0 + cell - 1, y0 + k, edge);
         }
       }
       row++;
@@ -415,8 +451,9 @@ try {
     ANIM_ORDER.forEach((anim) => {
       const total = animTotals[anim];
       const seen = (coverage[view][anim] || new Set()).size;
-      args.push('-fill', seen === total ? '#8ef2a8' : '#ff9f43');
-      args.push('-annotate', `+8+${y + 2}`, anim + ' ' + seen + '/' + total);
+      const applies = expectedAnims(view).indexOf(anim) >= 0;
+      args.push('-fill', !applies ? '#5c6688' : seen === total ? '#8ef2a8' : '#ff9f43');
+      args.push('-annotate', `+8+${y + 2}`, anim + ' ' + seen + '/' + total + (applies ? '' : ' (no aplica)'));
       y += heat.rowH;
     });
   });
