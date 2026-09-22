@@ -13,8 +13,8 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 | `sprites/atlas.json` | Metadatos formato **TexturePacker** (importable en Aseprite, Godot, Unity) |
 | `sprites/animations.json` | Animaciones: índices de frame, fps y loop |
 | `demo/index.html` | Demo web: mini-plataformas + visor de animaciones |
-| `tools/normalize.sh` | raw → normalizado (croma, trim, escala fija, ancla inferior) |
-| `tools/derive_extra.sh` | Deriva `land_*` y `wallslide_*` (pendientes de regenerar como arte nuevo) |
+| `tools/normalize.sh` | raw → normalizado (croma, trim, escala con tope ≤90px, ancla inferior) |
+| `tools/derive_extra.sh` | (legacy) derivaba `land_*`/`wallslide_*`; ya no se usa, hoy son arte generado |
 | `tools/build_atlas.sh` | Construye `atlas.png` + `atlas.json` + `animations.json` |
 
 ## Animaciones
@@ -28,13 +28,12 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 | `land` | 2 | 10 | ✘ |
 | `wallslide` | 2 | 6 | ✔ |
 
-Nota de producción: `idle`, `run`, `jump` y `fall` son arte generado; `land_00/01` (squash del idle) y `wallslide_00/01` (inclinación del fall) son **derivados por script** como versión provisional, listos para regenerarse como arte nuevo.
+Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte generado con la misma referencia y escala; `normalize.sh` iguala la altura de contenido a ≤90px para un movimiento fluido sin recortes.
 
 ## Reconstruir el atlas
 
 ```bash
-tools/normalize.sh       # raw -> frames 96x96
-tools/derive_extra.sh    # frames derivados (land, wallslide)
+tools/normalize.sh       # raw -> frames 96x96 (escala con tope, sin recortes)
 tools/build_atlas.sh     # atlas.png + atlas.json + animations.json
 ```
 
