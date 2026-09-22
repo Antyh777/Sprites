@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")/.."
 F=sprites/frames
-HEADROWS=52
+HEADROWS=63   # contenido 64px anclado abajo (y=32..96); cabeza ocupa hasta ~y=63
 
 if [ $# -gt 0 ]; then MAP=("$@"); else
   MAP=(run_01:run_00 run_03:run_00 run_04:run_00 run_05:run_00 fall_00:idle_00 land_00:idle_00)

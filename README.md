@@ -8,12 +8,12 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 |---|---|
 | `assets/character-reference.png` | (opcional) referencia del personaje |
 | `sprites/frames/raw/*.png` | Frames generados (1024px, fondo magenta de croma) |
-| `sprites/frames/*.png` | Frames normalizados: 96×96, transparencia, pies anclados abajo |
+| `sprites/frames/*.png` | Frames normalizados: celda 96×96, contenido 64px pixel-crisp, pies anclados abajo |
 | `sprites/atlas.png` | Hoja de sprites 768×192 (rejilla 8×2 de celdas 96×96) |
 | `sprites/atlas.json` | Metadatos formato **TexturePacker** (importable en Aseprite, Godot, Unity) |
 | `sprites/animations.json` | Animaciones: índices de frame, fps y loop |
 | `demo/index.html` | Demo web: mini-plataformas + visor de animaciones |
-| `tools/normalize.sh` | raw → normalizado (croma, trim, escala con tope ≤90px, ancla inferior) |
+| `tools/normalize.sh` | raw → normalizado (croma, trim, muestreo point a 64px, ancla inferior) |
 | `tools/derive_extra.sh` | (legacy) derivaba `land_*`/`wallslide_*`; ya no se usa, hoy son arte generado |
 | `tools/fix_faces.sh` | Unifica caras: trasplanta la cabeza canónica (2 ojos + audífono) a frames cuyo rostro derivó |
 | `tools/build_atlas.sh` | Construye `atlas.png` + `atlas.json` + `animations.json` |
@@ -23,13 +23,13 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 | Animación | Frames | FPS | Loop |
 |---|---|---|---|
 | `idle` | 2 | 3 | ✔ |
-| `run` | 6 | 10 | ✔ |
+| `run` | 6 | 12 | ✔ |
 | `jump` | 1 | 10 | ✘ |
 | `fall` | 1 | 8 | ✔ |
-| `land` | 2 | 10 | ✘ |
-| `wallslide` | 2 | 6 | ✔ |
+| `land` | 2 | 12 | ✘ |
+| `wallslide` | 2 | 8 | ✔ |
 
-Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte generado con la misma referencia y escala; `normalize.sh` iguala la altura de contenido a ≤90px para un movimiento fluido sin recortes.
+Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte generado con la misma referencia; `normalize.sh` los remuestrea (point) a 64px de alto en celdas 96×96: misma medida, pixel-crisp y sin recortes, para un movimiento fluido.
 
 ## Reconstruir el atlas
 

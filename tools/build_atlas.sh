@@ -56,11 +56,11 @@ animations = {
     "frame_size": {"w": CELL, "h": CELL},
     "animations": {
         "idle":      {"frames": [idx["idle_00"], idx["idle_01"]], "fps": 3,  "loop": True},
-        "run":       {"frames": [idx["run_00"], idx["run_01"], idx["run_02"], idx["run_03"], idx["run_04"], idx["run_05"]], "fps": 10, "loop": True},
+        "run":       {"frames": [idx["run_00"], idx["run_01"], idx["run_02"], idx["run_03"], idx["run_04"], idx["run_05"]], "fps": 12, "loop": True},
         "jump":      {"frames": [idx["jump_00"]], "fps": 10, "loop": False},
         "fall":      {"frames": [idx["fall_00"]], "fps": 8,  "loop": True},
-        "land":      {"frames": [idx["land_00"], idx["land_01"]], "fps": 10, "loop": False},
-        "wallslide": {"frames": [idx["wallslide_00"], idx["wallslide_01"]], "fps": 6, "loop": True},
+        "land":      {"frames": [idx["land_00"], idx["land_01"]], "fps": 12, "loop": False},
+        "wallslide": {"frames": [idx["wallslide_00"], idx["wallslide_01"]], "fps": 8, "loop": True},
     },
 }
 with open("sprites/animations.json", "w") as f:
