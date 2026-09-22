@@ -8,12 +8,12 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 |---|---|
 | `assets/character-reference.png` | (opcional) referencia del personaje |
 | `sprites/frames/raw/*.png` | Frames generados (1024px, fondo magenta de croma) |
-| `sprites/frames/*.png` | Frames normalizados: celda 96×96, contenido 64px pixel-crisp, pies anclados abajo |
-| `sprites/atlas.png` | Hoja de sprites 768×192 (rejilla 8×2 de celdas 96×96) |
+| `sprites/frames/*.png` | Frames normalizados: celda 40×40, contenido ~39px pixel-crisp, misma escala corporal, pies anclados abajo |
+| `sprites/atlas.png` | Hoja de sprites 320×80 (rejilla 8×2 de celdas 40×40) |
 | `sprites/atlas.json` | Metadatos formato **TexturePacker** (importable en Aseprite, Godot, Unity) |
 | `sprites/animations.json` | Animaciones: índices de frame, fps y loop |
 | `demo/index.html` | Demo web: mini-plataformas + visor de animaciones |
-| `tools/normalize.sh` | raw → normalizado (croma, trim, muestreo point a 64px, ancla inferior) |
+| `tools/normalize.sh` | raw → normalizado (croma, trim, escala por tamaño de cabeza, point, celda 40px, ancla inferior) |
 | `tools/derive_extra.sh` | (legacy) derivaba `land_*`/`wallslide_*`; ya no se usa, hoy son arte generado |
 | `tools/fix_faces.sh` | Unifica caras: trasplanta la cabeza canónica (2 ojos + audífono) a frames cuyo rostro derivó |
 | `tools/build_atlas.sh` | Construye `atlas.png` + `atlas.json` + `animations.json` |
@@ -29,7 +29,7 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 | `land` | 2 | 12 | ✘ |
 | `wallslide` | 2 | 8 | ✔ |
 
-Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte generado con la misma referencia; `normalize.sh` los remuestrea (point) a 64px de alto en celdas 96×96: misma medida, pixel-crisp y sin recortes, para un movimiento fluido.
+Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte generado con la misma referencia; `normalize.sh` los escala por tamaño de cabeza (detectando el cuello) y remuestrea (point) a celdas 40×40 con contenido ~39px: misma medida corporal en todos los frames, pixel-crisp y sin recortes, para un movimiento fluido.
 
 ## Reconstruir el atlas
 
@@ -50,5 +50,5 @@ Controles: `←`/`→` o `A`/`D` mover · `Espacio`/`↑`/`W` saltar · mantén 
 ## Importar en motores
 
 - **Aseprite**: File → Import Sprite Sheet… usando `sprites/atlas.json` (formato TexturePacker); luego crea tags por animación según `animations.json`.
-- **Godot**: `AnimatedSprite2D` → textura `atlas.png`; añade frames por región (96×96) siguiendo el orden de `animations.json` (o importa el JSON con un plugin tipo “TexturePacker importer”).
-- **Unity**: sprite mode *Multiple*, slice por rejilla 96×96 en el orden de `animations.json`; o usa un importer de JSON TexturePacker.
+- **Godot**: `AnimatedSprite2D` → textura `atlas.png`; añade frames por región (40×40) siguiendo el orden de `animations.json` (o importa el JSON con un plugin tipo “TexturePacker importer”).
+- **Unity**: sprite mode *Multiple*, slice por rejilla 40×40 en el orden de `animations.json`; o usa un importer de JSON TexturePacker.

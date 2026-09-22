@@ -1,8 +1,8 @@
 {
   "image": "sprites/atlas.png",
   "frame_size": {
-    "w": 96,
-    "h": 96
+    "w": 40,
+    "h": 40
   },
   "animations": {
     "idle": {

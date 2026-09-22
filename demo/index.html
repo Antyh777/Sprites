@@ -27,7 +27,7 @@
 <body>
 <header>
   <h1>Robot-cat — sprite frames para side-scroller</h1>
-  <p>Hoja de sprites 96×96 · animaciones: idle, run, jump, fall, land, wall-slide</p>
+  <p>Hoja de sprites 40×40 · animaciones: idle, run, jump, fall, land, wall-slide</p>
 </header>
 <div id="wrap">
   <div>
@@ -47,15 +47,15 @@
     <div class="row" id="animButtons"></div>
     <label>Velocidad de reproducción: <span id="spdLabel">1.00×</span></label>
     <input type="range" id="speed" min="0.25" max="2" step="0.05" value="1">
-    <label>Vista previa (4×)</label>
-    <canvas id="preview" width="288" height="288"></canvas>
+    <label>Vista previa (5×)</label>
+    <canvas id="preview" width="200" height="200"></canvas>
   </div>
 </div>
 <script>
 (async () => {
   const ATLAS_URL = '../sprites/atlas.png';
   const ANIM_URL  = '../sprites/animations.json';
-  const CELL = 96, COLS = 8, SCALE = 3;
+  const CELL = 40, COLS = 8, SCALE = 4;
 
   const atlas = new Image();
   atlas.src = ATLAS_URL;
@@ -82,7 +82,7 @@
 
   // ---------- jugador ----------
   const P = {
-    x: 120, y: 300, w: 56, h: 150,
+    x: 120, y: 300, w: 40, h: 120,
     vx: 0, vy: 0, face: 1, onGround: false,
     wall: 0, wallSliding: false,
     coyote: 0, buffer: 0, landT: 0,
@@ -258,8 +258,8 @@
     const a = ANIMS[st];
     const i = manual ? a.frames[Math.floor(pvAcc) % a.frames.length] : a.frames[frameOf(a)];
     const sx = (i % COLS) * CELL, sy = Math.floor(i / COLS) * CELL;
-    pctx.clearRect(0, 0, 288, 288);
-    pctx.drawImage(atlas, sx, sy, CELL, CELL, 0, 0, 288, 288);
+    pctx.clearRect(0, 0, 200, 200);
+    pctx.drawImage(atlas, sx, sy, CELL, CELL, 0, 0, 200, 200);
     return st;
   }
 

@@ -22,7 +22,7 @@ python3 - "$F" "${ORDER[@]}" <<'EOF'
 import json, sys, os
 frames_dir = sys.argv[1]
 order = sys.argv[2:]
-CELL = 96
+CELL = 40
 COLS = 8
 
 frames_tp = {}
