@@ -15,6 +15,7 @@ Sprite frames para movimientos tipo **side-scroller** del personaje robot-cat (d
 | `demo/index.html` | Demo web: mini-plataformas + visor de animaciones |
 | `tools/normalize.sh` | raw → normalizado (croma, trim, escala con tope ≤90px, ancla inferior) |
 | `tools/derive_extra.sh` | (legacy) derivaba `land_*`/`wallslide_*`; ya no se usa, hoy son arte generado |
+| `tools/fix_faces.sh` | Unifica caras: trasplanta la cabeza canónica (2 ojos + audífono) a frames cuyo rostro derivó |
 | `tools/build_atlas.sh` | Construye `atlas.png` + `atlas.json` + `animations.json` |
 
 ## Animaciones
@@ -34,6 +35,7 @@ Todos los frames (`idle`, `run`, `jump`, `fall`, `land`, `wallslide`) son arte g
 
 ```bash
 tools/normalize.sh       # raw -> frames 96x96 (escala con tope, sin recortes)
+tools/fix_faces.sh       # unifica caras al canon (2 ojos cyan + audifono)
 tools/build_atlas.sh     # atlas.png + atlas.json + animations.json
 ```
 
