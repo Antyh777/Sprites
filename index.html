@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sprites · Aventura lateral (side-scroller)</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== lienzo del juego ===================== -->
+  <div class="stage" id="stage">
+    <canvas id="game" width="384" height="216" aria-label="Juego side-scroller"></canvas>
+
+    <!-- HUD superpuesto (corazones, monedas, tiempo) -->
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hearts" id="hud-hearts"></span>
+      </div>
+      <div class="hud-right">
+        <span class="stat"><span class="icon coin"></span><b id="hud-coins">0</b>/<span id="hud-coins-total">0</span></span>
+        <span class="stat"><span class="icon clock"></span><b id="hud-time">0.0</b>s</span>
+        <span class="stat"><span class="icon star"></span><b id="hud-score">0</b></span>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="actions">
+      <button class="btn small" id="btn-sprite" title="Cargar tu propio sprite (S)">Sprite</button>
+      <button class="btn small" id="btn-frames" title="Ver todos los frames (H)">Frames</button>
+      <button class="btn small" id="btn-options" title="Opciones (O)">Opciones</button>
+      <button class="btn small" id="btn-sound" title="Silenciar (M)">🔊</button>
+      <button class="btn small" id="btn-pause" title="Pausa (P)">⏸</button>
+    </div>
+
+    <!-- Mensajes superpuestos (inicio / pausa / fin) -->
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <h1 id="ov-title">SPRITES</h1>
+        <p id="ov-text">Aventura lateral con frames de animación</p>
+        <ul class="keys">
+          <li><kbd>←</kbd><kbd>→</kbd> o <kbd>A</kbd><kbd>D</kbd> moverse</li>
+          <li><kbd>Espacio</kbd> o <kbd>W</kbd> saltar · <kbd>Shift</kbd> correr</li>
+          <li><kbd>S</kbd> cargar sprite · <kbd>H</kbd> frames · <kbd>M</kbd> sonido · <kbd>R</kbd> reiniciar</li>
+        </ul>
+        <button class="btn big" id="ov-button">▶ Jugar</button>
+      </div>
+    </div>
+
+    <!-- Controles táctiles -->
+    <div class="touch" id="touch">
+      <div class="dpad">
+        <button class="tbtn" data-key="left">◀</button>
+        <button class="tbtn" data-key="right">▶</button>
+      </div>
+      <div class="tact">
+        <button class="tbtn round" data-key="run">RUN</button>
+        <button class="tbtn round" data-key="jump">A</button>
+      </div>
+    </div>
+
+    <div class="drop-hint" id="drop-hint">Suelta tu hoja de sprites (PNG) para cargarla</div>
+  </div>
+
+  <!-- ===================== panel lateral ===================== -->
+  <aside class="panel" id="panel" aria-hidden="true">
+    <header class="panel-head">
+      <div class="tabs">
+        <button class="tab is-active" data-tab="sprite">Sprite</button>
+        <button class="tab" data-tab="frames">Frames</button>
+        <button class="tab" data-tab="options">Opciones</button>
+      </div>
+      <button class="btn small ghost" id="panel-close" title="Cerrar">✕</button>
+    </header>
+
+    <!-- --- pestaña: cargar sprite propio --- -->
+    <section class="tab-body" data-tab="sprite">
+      <p class="note">
+        El personaje incluido se dibuja a mano en <code>tools/hero-parts.mjs</code>.
+        Aquí puedes cargar <b>tu propia hoja de sprites</b>: se usará en el juego al instante.
+        Una fila por animación, en este orden: <b>idle, caminar, correr, salto, caída</b>.
+      </p>
+
+      <label class="drop" id="drop">
+        <input type="file" id="file-sprite" accept="image/png,image/webp,image/gif,image/*" hidden>
+        <span>📂 Elegir PNG…</span>
+        <small>o arrástralo al recuadro del juego</small>
+      </label>
+
+      <p class="note tiny">
+        ¿Prefieres dibujarla tú? Descarga la plantilla:
+        <a class="link" href="assets/plantilla-hoja-sprites.png" download>plantilla-hoja-sprites.png</a>
+        · referencia del héroe:
+        <a class="link" href="assets/hoja-heroe-etiquetada.png" download>hoja-heroe-etiquetada.png</a>
+      </p>
+      <p class="note tiny">
+        Recuerda: fondo <b>transparente</b> y el personaje <b>apoyado abajo</b> de cada celda
+        (la línea base marca dónde van los pies).
+      </p>
+
+      <div class="grid2">
+        <label>Ancho de frame <input type="number" id="cfg-fw" value="16" min="4" max="256"></label>
+        <label>Alto de frame <input type="number" id="cfg-fh" value="24" min="4" max="256"></label>
+      </div>
+      <div class="grid2">
+        <label>Separación <input type="number" id="cfg-gap" value="0" min="0" max="8" step="1" title="Píxeles transparentes entre frames"></label>
+        <label>Orden de filas
+          <select id="cfg-order">
+            <option value="idle,walk,run,jump,fall">idle·walk·run·jump·fall</option>
+            <option value="walk,run,idle,jump,fall">walk·run·idle·jump·fall</option>
+            <option value="idle,run,walk,jump,fall">idle·run·walk·jump·fall</option>
+          </select>
+        </label>
+      </div>
+      <div class="grid2">
+        <label>Frames idle <input type="number" id="cfg-idle" value="4" min="1" max="32"></label>
+        <label>Frames caminar <input type="number" id="cfg-walk" value="6" min="1" max="32"></label>
+      </div>
+      <div class="grid2">
+        <label>Frames correr <input type="number" id="cfg-run" value="6" min="1" max="32"></label>
+        <label>Frames salto <input type="number" id="cfg-jump" value="2" min="1" max="32"></label>
+      </div>
+      <div class="grid2">
+        <label>Frames caída <input type="number" id="cfg-fall" value="2" min="1" max="32"></label>
+        <label class="check"><input type="checkbox" id="cfg-trim"> recortar filas vacías</label>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="btn-autodetect">🔍 Detectar rejilla</button>
+        <button class="btn" id="btn-apply" disabled>✓ Aplicar</button>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="btn-reset-sprite">↺ Volver al héroe incluido</button>
+      </div>
+
+      <div class="preview-wrap">
+        <canvas id="preview" width="288" height="120"></canvas>
+        <div class="preview-legend" id="preview-legend">Sin imagen cargada.</div>
+      </div>
+      <p class="note tiny" id="sheet-info">Héroe incluido: 16×24 · 20 frames.</p>
+    </section>
+
+    <!-- --- pestaña: inspector de frames --- -->
+    <section class="tab-body" data-tab="frames" hidden>
+      <p class="note">Todos los frames del sprite activo. La animación en curso se resalta.</p>
+      <div class="row">
+        <button class="btn small" id="btn-zoom-out">−</button>
+        <span class="zoom-label" id="zoom-label">×3</span>
+        <button class="btn small" id="btn-zoom-in">+</button>
+        <span class="spacer"></span>
+        <label class="check"><input type="checkbox" id="chk-anim" checked> animar</label>
+      </div>
+      <canvas id="inspector" width="288" height="640"></canvas>
+      <p class="note tiny" id="inspector-info"></p>
+    </section>
+
+    <!-- --- pestaña: opciones --- -->
+    <section class="tab-body" data-tab="options" hidden>
+      <label class="check"><input type="checkbox" id="opt-hurtbox"> mostrar puntos de colisión</label>
+      <label class="check"><input type="checkbox" id="opt-touch"> controles táctiles siempre visibles</label>
+      <label class="check"><input type="checkbox" id="opt-fps"> mostrar FPS</label>
+      <label class="check"><input type="checkbox" id="opt-shadows"> sombras de los personajes</label>
+      <label class="check"><input type="checkbox" id="opt-parallax" checked> fondo con parallax</label>
+      <label class="check"><input type="checkbox" id="opt-autoplay"> piloto automático (demo de animaciones)</label>
+      <label class="range">Velocidad del juego ×<input type="range" id="opt-speed" min="0.25" max="1.5" step="0.05" value="1"><span id="opt-speed-val">1.00</span></label>
+      <div class="row">
+        <button class="btn ghost" id="btn-restart">↺ Reiniciar nivel (R)</button>
+      </div>
+      <p class="note tiny">
+        Trucos de desarrollo: <kbd>H</kbd> frames, <kbd>O</kbd> panel, <kbd>F</kbd> avanzar un frame
+        (con pausa), <kbd>G</kbd> invulnerable.
+      </p>
+    </section>
+  </aside>
+</div>
+
+<!-- datos generados por tools/build.mjs -->
+<script src="js/hero-frames.js"></script>
+<script src="js/hero-png.js"></script>
+<!-- motor -->
+<script src="js/sprites.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
