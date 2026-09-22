@@ -60,6 +60,7 @@ Cada animación existe en **las tres vistas y en los dos sentidos**:
 | `assets/robot-front-left-sheet.png` / `-right-sheet.png` | de frente mirando a cada lado |
 | `assets/robot-referencia.png` | todas las vistas y animaciones, ampliadas y etiquetadas |
 | `assets/plantilla-hoja-sprites.png` | plantilla vacía para dibujar tus propias hojas |
+| `assets/frames-antes-despues.png` | comparativa del arte antes y después de corregir los recortes |
 
 Layout de cada hoja: **una fila por animación** (idle, walk, run, jump, fall),
 **una columna por frame**, celdas de 50×60 px, fondo transparente y el
